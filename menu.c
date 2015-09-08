@@ -14,13 +14,31 @@
 #include <vdr/interface.h>
 #include <string>
 #include <sstream>
-#include <vector>
 
 static inline cOsdItem *SeparatorItem(const char *Label)
 {
   cOsdItem *Item = new cOsdItem(cString::sprintf("----- %s -----", Label));
   Item->SetSelectable(false);
   return Item;
+}
+
+// --- cDuplicatesReplayControl -------------------------------------------------------
+
+class cDuplicatesReplayControl : public cReplayControl {
+public:
+  virtual eOSState ProcessKey(eKeys Key);
+  };
+
+eOSState cDuplicatesReplayControl::ProcessKey(eKeys Key)
+{
+  eOSState state = cReplayControl::ProcessKey(Key);
+  if (state == osRecordings)
+  {
+     cControl::Shutdown();
+     cRemote::CallPlugin("duplicates");
+     return osContinue;
+  }
+  return state;
 }
 
 // --- cMenuDuplicate --------------------------------------------------------
@@ -38,6 +56,7 @@ cMenuDuplicate::cMenuDuplicate(const cRecording *Recording)
 :cOsdMenu(trVDR("Recording info"))
 {
   recording = Recording;
+  SetHelp(trVDR("Button$Play"));
 }
 
 void cMenuDuplicate::Display(void)
@@ -70,6 +89,8 @@ eOSState cMenuDuplicate::ProcessKey(eKeys Key)
 
   if (state == osUnknown) {
      switch (Key) {
+       case kPlay:
+       case kRed:    cRemote::Put(Key, true);
        case kOk:     return osBack;
        default: break;
        }
@@ -126,12 +147,8 @@ cDuplicateRecording::cDuplicateRecording(const cRecording *Recording)
 {
   recording = Recording;
   checked = false;
-  if (recording->Info()->Title())
-  {
+  if (dc.title && recording->Info()->Title())
      title = std::string(recording->Info()->Title());
-     if (title.length() > 1 && (title[0] == '@' || title[0] == '%'))
-        title = title.substr(1);
-  }
   else
      title = std::string();
   std::stringstream desc;
@@ -156,6 +173,7 @@ cDuplicateRecording::cDuplicateRecording(const cRecording *Recording)
 
 cDuplicateRecording::~cDuplicateRecording()
 {
+  title.clear();
   description.clear();
 }
 
@@ -170,10 +188,13 @@ bool cDuplicateRecording::IsDuplicate(const cDuplicateRecording *DuplicateRecord
      return false;
 
   size_t found;
-  found = title.size() > DuplicateRecording->title.size() ?
-            title.find(DuplicateRecording->title) : DuplicateRecording->title.find(title);
-  if (found == std::string::npos)
-     return false;
+  if (dc.title)
+  {
+     found = title.size() > DuplicateRecording->title.size() ?
+               title.find(DuplicateRecording->title) : DuplicateRecording->title.find(title);
+     if (found == std::string::npos)
+        return false;
+  }
 
   found = description.size() > DuplicateRecording->description.size() ?
             description.find(DuplicateRecording->description) : DuplicateRecording->description.find(description);
@@ -218,7 +239,7 @@ void cMenuDuplicates::SetHelpKeys(void)
      switch (NewHelpKeys) {
        case 0: SetHelp(NULL); break;
        case 1:
-       case 2: SetHelp(NULL, NULL, trVDR("Button$Delete"), NewHelpKeys == 2 ? trVDR("Button$Info") : NULL);
+       case 2: SetHelp(trVDR("Button$Play"), trVDR("Setup"), trVDR("Button$Delete"), NewHelpKeys == 2 ? trVDR("Button$Info") : NULL);
        default: ;
        }
      helpKeys = NewHelpKeys;
@@ -227,9 +248,12 @@ void cMenuDuplicates::SetHelpKeys(void)
 
 void cMenuDuplicates::Set(bool Refresh)
 {
+  const char *CurrentRecording = NULL;
   int currentIndex = -1;
   if (Refresh)
      currentIndex = Current();
+  else
+     CurrentRecording = cReplayControl::LastReplayed();
   cList<cDuplicateRecording> *descriptionless = new cList<cDuplicateRecording>;
   cList<cDuplicateRecording> *recordings = new cList<cDuplicateRecording>;
   cThreadLock RecordingsLock(&Recordings);
@@ -258,7 +282,11 @@ void cMenuDuplicates::Set(bool Refresh)
             for (cDuplicateRecording *DuplicateRecording = duplicates->First(); DuplicateRecording; DuplicateRecording = duplicates->Next(DuplicateRecording)) {
                 cMenuDuplicateItem *Item = new cMenuDuplicateItem(DuplicateRecording->Recording());
                 if (*Item->Text())
+                {
                    Add(Item);
+                   if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
+                      SetCurrent(Item);
+                   }
                 else
                    delete Item;
                 }
@@ -271,7 +299,11 @@ void cMenuDuplicates::Set(bool Refresh)
   for (cDuplicateRecording *DescriptionlessRecording = descriptionless->First(); DescriptionlessRecording; DescriptionlessRecording = descriptionless->Next(DescriptionlessRecording)) {
       cMenuDuplicateItem *Item = new cMenuDuplicateItem(DescriptionlessRecording->Recording());
       if (*Item->Text())
+      {
          Add(Item);
+         if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
+            SetCurrent(Item);
+         }
       else
          delete Item;
       }
@@ -346,6 +378,32 @@ eOSState cMenuDuplicates::Delete(void)
   return osContinue;
 }
 
+eOSState cMenuDuplicates::Play(void)
+{
+  if (HasSubMenu() || Count() == 0)
+     return osContinue;
+  cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current());
+  if (ri) {
+     cRecording *recording = GetRecording(ri);
+     if (recording) {
+        cDuplicatesReplayControl::SetRecording(recording->FileName(), recording->Title());
+        cControl::Shutdown();
+        cControl::Launch(new cDuplicatesReplayControl);
+        return osEnd;
+        }
+     }
+  return osContinue;
+}
+
+eOSState cMenuDuplicates::Setup(void)
+{
+  if (HasSubMenu())
+     return osContinue;
+  cMenuSetupDuplicates *setupMenu = new cMenuSetupDuplicates(this);
+  setupMenu->SetTitle(cString::sprintf("%s - %s", tr("Duplicate recordings"), trVDR("Setup")));
+  return AddSubMenu(setupMenu);
+}
+
 eOSState cMenuDuplicates::Info(void)
 {
   if (HasSubMenu() || Count() == 0)
@@ -365,8 +423,11 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key)
 
   if (state == osUnknown) {
      switch (Key) {
-       case kOk:     return Info();
+       case kPlay:
+       case kRed:    return Play();
+       case kGreen:  return Setup();
        case kYellow: return Delete();
+       case kOk:
        case kInfo:
        case kBlue:   return Info();
        case kNone:   if (Recordings.StateChanged(recordingsState))
@@ -380,4 +441,27 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key)
         SetHelpKeys();
      }
   return state;
+}
+
+// --- cMenuSetupDuplicates --------------------------------------------------
+
+cMenuSetupDuplicates::cMenuSetupDuplicates(cMenuDuplicates *MenuDuplicates)
+{
+  menuDuplicates = MenuDuplicates;
+  Add(new cMenuEditBoolItem(tr("Compare title"), &dc.title));
+}
+
+void cMenuSetupDuplicates::Store(void)
+{
+  dc.Store();
+  if (menuDuplicates != NULL)
+  {
+     menuDuplicates->SetCurrent(NULL);
+     menuDuplicates->Set();
+  }
+}
+
+void cMenuSetupDuplicates::SetTitle(const char *Title)
+{
+  cMenuSetupPage::SetTitle(Title);
 }

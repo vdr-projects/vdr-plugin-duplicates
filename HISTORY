@@ -1,6 +1,11 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2011-12-20: Version 0.0.4
+
+- Added configuration option for title comparison.
+- Added play button, thanks to Matthias Feistel.
+
 2011-12-12: Version 0.0.3
 
 - Improved comparison algorithm.

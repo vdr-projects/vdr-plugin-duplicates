@@ -8,9 +8,10 @@
 
 
 #include <vdr/plugin.h>
+#include "config.h"
 #include "menu.h"
 
-static const char *VERSION        = "0.0.3";
+static const char *VERSION        = "0.0.4";
 static const char *DESCRIPTION    = trNOOP("Shows duplicate recordings");
 static const char *MAINMENUENTRY  = trNOOP("Duplicate recordings");
 
@@ -21,7 +22,7 @@ public:
   cPluginDuplicates(void);
   virtual ~cPluginDuplicates();
   virtual const char *Version(void) { return VERSION; }
-  virtual const char *Description(void) { return DESCRIPTION; }
+  virtual const char *Description(void) { return tr(DESCRIPTION); }
   virtual const char *CommandLineHelp(void);
   virtual bool ProcessArgs(int argc, char *argv[]);
   virtual bool Initialize(void);
@@ -113,13 +114,13 @@ cOsdObject *cPluginDuplicates::MainMenuAction(void)
 cMenuSetupPage *cPluginDuplicates::SetupMenu(void)
 {
   // Return a setup menu in case the plugin supports one.
-  return NULL;
+  return new cMenuSetupDuplicates;
 }
 
 bool cPluginDuplicates::SetupParse(const char *Name, const char *Value)
 {
   // Parse your own setup parameters and store their values.
-  return false;
+  return dc.SetupParse(Name, Value);;
 }
 
 bool cPluginDuplicates::Service(const char *Id, void *Data)
