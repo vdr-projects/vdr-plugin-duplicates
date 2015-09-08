@@ -1,6 +1,11 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2011-12-12: Version 0.0.3
+
+- Improved comparison algorithm.
+- Added German translations provided by flex0r.
+
 2011-09-12: Version 0.0.2
 
 - Added Italian translations provided by Diego Pierotto.

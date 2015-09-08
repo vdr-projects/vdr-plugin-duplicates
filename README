@@ -15,3 +15,20 @@ See the file COPYING for more information.
 Description:
 
 Shows duplicate recordings.
+
+Detection method:
+
+The detection method is based on recording information. 
+
+Recordings without a description or a short description are not 
+included in the comparison and are shown at the botton of the 
+duplicate recordings list.
+
+Recorings are not considered duplicate if shorter title in not 
+included in the other title. '@' and '%' characters are removed
+in front of the title before the comparison.
+
+The short description and the description are concatenated to a
+string. Spaces and '|' characters are removed from the string.
+Recordings are considered duplicate if the shorter string is
+included in the other string.

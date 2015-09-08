@@ -13,6 +13,8 @@
 #include <vdr/status.h>
 #include <vdr/interface.h>
 #include <string>
+#include <sstream>
+#include <vector>
 
 static inline cOsdItem *SeparatorItem(const char *Label)
 {
@@ -108,13 +110,13 @@ private:
   const cRecording *recording;
   bool checked;
 protected:
-  std::string haystack;
-  std::string needle;
+  std::string title;
+  std::string description;
 public:
   cDuplicateRecording(const cRecording *Recording);
   ~cDuplicateRecording();
   const cRecording *Recording(void);
-  bool HasDescription(void) const { return ! haystack.empty() && ! needle.empty(); }
+  bool HasDescription(void) const { return ! description.empty(); }
   bool IsDuplicate(const cDuplicateRecording *DuplicateRecording);
   void SetChecked(bool chkd = true) { checked = chkd; }
   bool Checked() { return checked; }
@@ -124,28 +126,37 @@ cDuplicateRecording::cDuplicateRecording(const cRecording *Recording)
 {
   recording = Recording;
   checked = false;
-  if (recording->Info()->Description())
+  if (recording->Info()->Title())
   {
-     haystack = std::string(recording->Info()->Description());
-     size_t length = haystack.size() * 0.7f;
-     needle = std::string(length > 0 ? haystack.substr(0, length) : haystack);
-  }
-  else if(recording->Info()->ShortText())
-  {
-     needle = std::string(recording->Info()->ShortText());
-     haystack = std::string(recording->Info()->ShortText());
+     title = std::string(recording->Info()->Title());
+     if (title.length() > 1 && (title[0] == '@' || title[0] == '%'))
+        title = title.substr(1);
   }
   else
-  {
-     needle = std::string();
-     haystack = std::string();
+     title = std::string();
+  std::stringstream desc;
+  if (recording->Info()->ShortText())
+     desc << std::string(recording->Info()->ShortText());
+  if (recording->Info()->Description())
+     desc << std::string(recording->Info()->Description());
+  description = desc.str();
+  while(true) {
+    size_t found = description.find("|");
+    if (found == std::string::npos)
+       break;
+    description.replace(found, 1, "");
+  }
+  while(true) {
+    size_t found = description.find(" ");
+    if (found == std::string::npos)
+       break;
+    description.replace(found, 1, "");
   }
 }
 
 cDuplicateRecording::~cDuplicateRecording()
 {
-  haystack.clear();
-  needle.clear();
+  description.clear();
 }
 
 const cRecording *cDuplicateRecording::Recording(void)
@@ -155,13 +166,20 @@ const cRecording *cDuplicateRecording::Recording(void)
 
 bool cDuplicateRecording::IsDuplicate(const cDuplicateRecording *DuplicateRecording)
 {
-  if (!HasDescription())
+  if (!HasDescription() || !DuplicateRecording->HasDescription())
      return false;
-  if (!DuplicateRecording->HasDescription())
+
+  size_t found;
+  found = title.size() > DuplicateRecording->title.size() ?
+            title.find(DuplicateRecording->title) : DuplicateRecording->title.find(title);
+  if (found == std::string::npos)
      return false;
-  size_t found = haystack.size() > DuplicateRecording->haystack.size() ? haystack.find(DuplicateRecording->needle) : DuplicateRecording->haystack.find(needle);
+
+  found = description.size() > DuplicateRecording->description.size() ?
+            description.find(DuplicateRecording->description) : DuplicateRecording->description.find(description);
   if (found != std::string::npos)
      return true;
+
   return false;
 }
 
