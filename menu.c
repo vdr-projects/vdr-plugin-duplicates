@@ -55,6 +55,9 @@ public:
 cMenuDuplicate::cMenuDuplicate(const cRecording *Recording)
 :cOsdMenu(trVDR("Recording info"))
 {
+#if VDRVERSNUM >= 10728
+  SetMenuCategory(mcRecording);
+#endif
   recording = Recording;
   SetHelp(trVDR("Button$Play"));
 }
@@ -207,12 +210,15 @@ bool cDuplicateRecording::IsDuplicate(const cDuplicateRecording *DuplicateRecord
 // --- cMenuDuplicates -------------------------------------------------------
 
 cMenuDuplicates::cMenuDuplicates()
-#ifdef LIEMIKUUTIO
+#if defined LIEMIKUUTIO || VDRVERSNUM >= 10721
 :cOsdMenu(tr("Duplicate recordings"), 9, 7, 7)
 #else
 :cOsdMenu(tr("Duplicate recordings"), 9, 7)
 #endif
 {
+#if VDRVERSNUM >= 10728
+  SetMenuCategory(mcRecording);
+#endif
   Recordings.StateChanged(recordingsState); // just to get the current state
   helpKeys = -1;
   Set();
@@ -386,7 +392,11 @@ eOSState cMenuDuplicates::Play(void)
   if (ri) {
      cRecording *recording = GetRecording(ri);
      if (recording) {
+#if VDRVERSNUM >= 10728
+        cDuplicatesReplayControl::SetRecording(recording->FileName());
+#else
         cDuplicatesReplayControl::SetRecording(recording->FileName(), recording->Title());
+#endif
         cControl::Shutdown();
         cControl::Launch(new cDuplicatesReplayControl);
         return osEnd;
@@ -447,6 +457,9 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key)
 
 cMenuSetupDuplicates::cMenuSetupDuplicates(cMenuDuplicates *MenuDuplicates)
 {
+#if VDRVERSNUM >= 10728
+  SetMenuCategory(mcSetup);
+#endif
   menuDuplicates = MenuDuplicates;
   Add(new cMenuEditBoolItem(tr("Compare title"), &dc.title));
 }

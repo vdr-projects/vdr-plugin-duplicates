@@ -1,6 +1,10 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2012-12-13: Version 0.0.5
+
+- Fixed compilation with VDR 1.7.28, thanks to Matti Lehtimäki and Joerg Bornkessel
+
 2011-12-20: Version 0.0.4
 
 - Added configuration option for title comparison.
