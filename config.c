@@ -13,13 +13,14 @@
 
 cDuplicatesConfig::cDuplicatesConfig() {
   title = 1;
+  hidden = 0;
 }
 
-cDuplicatesConfig::~cDuplicatesConfig() { }
-
+cDuplicatesConfig::~cDuplicatesConfig() {}
 
 bool cDuplicatesConfig::SetupParse(const char *Name, const char *Value) {
   if      (!strcasecmp(Name, "title"))     title = atoi(Value);
+  else if (!strcasecmp(Name, "hidden"))    hidden = atoi(Value);
   else
     return false;
   return true;

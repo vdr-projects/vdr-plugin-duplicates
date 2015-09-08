@@ -5,12 +5,12 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: vdr-duplicates 0.0.6\n"
+"Project-Id-Version: vdr-duplicates 0.1.0\n"
 "Report-Msgid-Bugs-To: <see README>\n"
-"POT-Creation-Date: 2011-12-20 18:14+0200\n"
-"PO-Revision-Date: 2015-02-03 11:12+0100\n"
+"POT-Creation-Date: 2015-08-31 11:33+0300\n"
+"PO-Revision-Date: 2015-09-06 17:57+0100\n"
 "Last-Translator: Joerg Bornkessel <hd_brummy@gentoo.org>\n"
-"Language-Team: \n"
+"Language-Team: Deutsch\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -25,6 +25,12 @@ msgstr "Zeigt doppelte Aufnahmen an"
 msgid "Duplicate recordings"
 msgstr "Doppelte Aufnahmen anzeigen"
 
+msgid "Hide"
+msgstr "Verstecken"
+
+msgid "Unhide"
+msgstr "Aufnahme sichtbar machen"
+
 #, c-format
 msgid "%d duplicate recordings"
 msgstr "%d doppelte Aufnahmen"
@@ -33,5 +39,17 @@ msgstr "%d doppelte Aufnahmen"
 msgid "%d recordings without description"
 msgstr "%d Aufnahmen ohne Beschreibung"
 
+msgid "Unhide recording?"
+msgstr "Versteckte Aufnahme sichtbar machen?"
+
+msgid "Hide recording?"
+msgstr "Aufnahme verstecken?"
+
+msgid "Error while setting visibility!"
+msgstr "Fehler bei dem sichtbar machen der Aufnahme!"
+
 msgid "Compare title"
 msgstr "Vergleiche Titel"
+
+msgid "Show hidden"
+msgstr "Zeige versteckte Aufnahmen"

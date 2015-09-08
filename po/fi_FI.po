@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vdr-duplicates 0.0.1\n"
 "Report-Msgid-Bugs-To: <see README>\n"
-"POT-Creation-Date: 2011-12-20 18:14+0200\n"
+"POT-Creation-Date: 2015-08-31 11:33+0300\n"
 "PO-Revision-Date: 2011-12-12 19:57+0300\n"
 "Last-Translator: Timo Eskola <timo@tolleri.net>\n"
 "Language-Team: Finnish\n"
@@ -24,6 +24,12 @@ msgstr "Näyttää päällekkäiset tallenteet"
 msgid "Duplicate recordings"
 msgstr "Päällekkäiset tallenteet"
 
+msgid "Hide"
+msgstr "Piilota"
+
+msgid "Unhide"
+msgstr "Älä piilota"
+
 #, c-format
 msgid "%d duplicate recordings"
 msgstr "%d päällekkäistä tallennetta"
@@ -32,5 +38,17 @@ msgstr "%d päällekkäistä tallennetta"
 msgid "%d recordings without description"
 msgstr "%d tallennetta ilman kuvausta"
 
+msgid "Unhide recording?"
+msgstr "Älä piilota tallennetta?"
+
+msgid "Hide recording?"
+msgstr "Piilota tallenne?"
+
+msgid "Error while setting visibility!"
+msgstr "Näkyvyyden asettaminen epäonnistui!"
+
 msgid "Compare title"
 msgstr "Vertaa otsikkoa"
+
+msgid "Show hidden"
+msgstr "Näytä piilotetut"

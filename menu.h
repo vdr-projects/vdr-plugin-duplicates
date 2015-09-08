@@ -32,13 +32,14 @@ private:
   eOSState Setup(void);
   eOSState Delete(void);
   eOSState Info(void);
+  eOSState ToggleHidden(void);
 protected:
   cRecording *GetRecording(cMenuDuplicateItem *Item);
 public:
   cMenuDuplicates();
   ~cMenuDuplicates();
   virtual eOSState ProcessKey(eKeys Key);
-  };
+};
 
 // --- cMenuSetupDuplicates --------------------------------------------------
 
@@ -50,6 +51,6 @@ protected:
 public:
   cMenuSetupDuplicates(cMenuDuplicates *menuDuplicates = NULL);
   void SetTitle(const char *Title);
-  };
+};
 
 #endif

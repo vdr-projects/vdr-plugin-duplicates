@@ -53,7 +53,7 @@ DEFINES += -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = $(PLUGIN).o menu.o config.o
+OBJS = $(PLUGIN).o menu.o config.o visibility.o
 
 ### The main target:
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vdr-duplicates 0.0.1\n"
 "Report-Msgid-Bugs-To: <see README>\n"
-"POT-Creation-Date: 2011-12-20 18:14+0200\n"
+"POT-Creation-Date: 2015-08-31 11:33+0300\n"
 "PO-Revision-Date: 2011-06-05 23:37+0100\n"
 "Last-Translator: Diego Pierotto <vdr-italian@tiscali.it>\n"
 "Language-Team: \n"
@@ -27,6 +27,12 @@ msgstr "Mostra registrazioni duplicate"
 msgid "Duplicate recordings"
 msgstr "Registrazioni duplicate"
 
+msgid "Hide"
+msgstr ""
+
+msgid "Unhide"
+msgstr ""
+
 #, c-format
 msgid "%d duplicate recordings"
 msgstr "%d registrazioni duplicate"
@@ -35,5 +41,17 @@ msgstr "%d registrazioni duplicate"
 msgid "%d recordings without description"
 msgstr "%d registrazioni senza descrizione"
 
+msgid "Unhide recording?"
+msgstr ""
+
+msgid "Hide recording?"
+msgstr ""
+
+msgid "Error while setting visibility!"
+msgstr ""
+
 msgid "Compare title"
+msgstr ""
+
+msgid "Show hidden"
 msgstr ""

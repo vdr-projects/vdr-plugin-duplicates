@@ -13,6 +13,7 @@ class cDuplicatesConfig {
   public:
     // variables
     int title;
+    int hidden;
     // member functions
     cDuplicatesConfig();
     ~cDuplicatesConfig();

@@ -1,6 +1,11 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2015-08-31: Version 0.1.0
+
+- Added hiding of duplicate recordings.
+- Updated German translations, thanks to Joerg Bornkessel.
+
 2015-06-05: Version 0.0.6
 
 - Added patch from Joerg Bornkessel:
