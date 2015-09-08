@@ -10,7 +10,7 @@
 #include <vdr/plugin.h>
 #include "menu.h"
 
-static const char *VERSION        = "0.0.1";
+static const char *VERSION        = "0.0.2";
 static const char *DESCRIPTION    = trNOOP("Shows duplicate recordings");
 static const char *MAINMENUENTRY  = trNOOP("Duplicate recordings");
 

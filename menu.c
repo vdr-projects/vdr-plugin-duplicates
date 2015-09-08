@@ -89,7 +89,7 @@ public:
 cMenuDuplicateItem::cMenuDuplicateItem(const cRecording *Recording)
 {
   fileName = strdup(Recording->FileName());
-#ifdef LIEMIKUUTIO
+#if defined LIEMIKUUTIO && LIEMIKUUTIO < 131
   SetText(Recording->Title('\t', true, -1, false));
 #else
   SetText(Recording->Title('\t', true));

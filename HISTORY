@@ -1,6 +1,11 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2011-09-12: Version 0.0.2
+
+- Added Italian translations provided by Diego Pierotto.
+- Fixed compilation with VDR 1.7.21 and Liemikuutio 1.31.
+
 2011-06-01: Version 0.0.1
 
 - Initial revision.
