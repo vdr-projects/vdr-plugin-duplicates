@@ -2,4 +2,5 @@
 *.mo
 *.so
 *.pot
+*.tgz
 .dependencies
