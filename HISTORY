@@ -1,6 +1,13 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2015-06-05: Version 0.0.6
+
+- Added patch from Joerg Bornkessel:
+  - New Makefile handling up from vdr-1.7.34
+  - Completed german translation.
+  - Minor fixes in .po files
+
 2012-12-13: Version 0.0.5
 
 - Fixed compilation with VDR 1.7.28, thanks to Matti Lehtimäki and Joerg Bornkessel
