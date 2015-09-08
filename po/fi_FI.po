@@ -1,0 +1,33 @@
+# Finnish translations for PACKAGE package
+# Suomenkielinen käännös PACKAGE-paketille.
+# Copyright (C) 2011 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Timo Eskola <timo@tolleri.net>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: vdr-duplicates 0.0.1\n"
+"Report-Msgid-Bugs-To: <see README>\n"
+"POT-Creation-Date: 2011-06-02 19:48+0300\n"
+"PO-Revision-Date: 2011-05-26 22:35+0300\n"
+"Last-Translator: Timo Eskola <timo@tolleri.net>\n"
+"Language-Team: Finnish\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Shows duplicate recordings"
+msgstr "Näyttää päällekkäiset tallenteet"
+
+msgid "Duplicate recordings"
+msgstr "Päällekkäiset tallenteet"
+
+#, c-format
+msgid "%d duplicate recordings"
+msgstr "%d päällekkäistä tallennetta"
+
+#, c-format
+msgid "%d recordings without description"
+msgstr "%d tallennetta ilman kuvausta"
