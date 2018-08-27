@@ -14,7 +14,7 @@
 #include <vdr/status.h>
 #include <vdr/interface.h>
 #include <sys/time.h>
-#if VDRVERSNUM >= 10728
+#if VDRVERSNUM >= 20301
 #include <vdr/svdrp.h>
 #endif
 #include <string>
@@ -105,34 +105,41 @@ eOSState cMenuDuplicate::ProcessKey(eKeys Key)
 
 class cDuplicateRecording : public cListObject {
 private:
-  const cRecording *recording;
   bool checked;
   cVisibility visibility;
+  std::string fileName;
+  std::string name;
   std::string title;
   std::string description;
 public:
   cDuplicateRecording(const cRecording *Recording);
   cDuplicateRecording(const cDuplicateRecording &DuplicateRecording);
-  const cRecording *Recording(void) const { return recording; }
   bool HasDescription(void) const { return ! description.empty(); }
   bool IsDuplicate(cDuplicateRecording *DuplicateRecording);
   void SetChecked(bool chkd = true) { checked = chkd; }
   bool Checked() { return checked; }
   cVisibility Visibility() { return visibility; }
+  std::string FileName(void) { return fileName; }
+  std::string Name(void) { return name; }
 };
 
 cDuplicateRecording::cDuplicateRecording(const cRecording *Recording) : visibility(Recording->FileName()) {
-  recording = Recording;
   checked = false;
-  if (dc.title && recording->Info()->Title())
-     title = std::string(recording->Info()->Title());
+  fileName = std::string(Recording->FileName());
+#if defined LIEMIKUUTIO && LIEMIKUUTIO < 131
+  name = std::string(Recording->Title('\t', true, -1, false));
+#else
+  name = std::string(Recording->Title('\t', true));
+#endif
+  if (dc.title && Recording->Info()->Title())
+     title = std::string(Recording->Info()->Title());
   else
      title = std::string();
   std::stringstream desc;
-  if (recording->Info()->ShortText())
-     desc << std::string(recording->Info()->ShortText());
-  if (recording->Info()->Description())
-     desc << std::string(recording->Info()->Description());
+  if (Recording->Info()->ShortText())
+     desc << std::string(Recording->Info()->ShortText());
+  if (Recording->Info()->Description())
+     desc << std::string(Recording->Info()->Description());
   description = desc.str();
   while(true) {
     size_t found = description.find("|");
@@ -149,9 +156,10 @@ cDuplicateRecording::cDuplicateRecording(const cRecording *Recording) : visibili
 }
 
 cDuplicateRecording::cDuplicateRecording(const cDuplicateRecording &DuplicateRecording) :
-  recording(DuplicateRecording.recording),
   checked(DuplicateRecording.checked),
   visibility(DuplicateRecording.visibility),
+  fileName(DuplicateRecording.fileName),
+  name(DuplicateRecording.name),
   title(DuplicateRecording.title),
   description(DuplicateRecording.description) {}
 
@@ -179,26 +187,17 @@ bool cDuplicateRecording::IsDuplicate(cDuplicateRecording *DuplicateRecording) {
 
 class cMenuDuplicateItem : public cOsdItem {
 private:
-  char *fileName;
+  std::string fileName;
   cVisibility visibility;
 public:
   cMenuDuplicateItem(cDuplicateRecording *DuplicateRecording);
-  ~cMenuDuplicateItem();
-  const char *FileName(void) { return fileName; }
+  const char *FileName(void) { return fileName.c_str(); }
   cVisibility Visibility() { return visibility; }
 };
 
 cMenuDuplicateItem::cMenuDuplicateItem(cDuplicateRecording *DuplicateRecording) : visibility(DuplicateRecording->Visibility()) {
-  fileName = strdup(DuplicateRecording->Recording()->FileName());
-#if defined LIEMIKUUTIO && LIEMIKUUTIO < 131
-  SetText(DuplicateRecording->Recording()->Title('\t', true, -1, false));
-#else
-  SetText(DuplicateRecording->Recording()->Title('\t', true));
-#endif
-}
-
-cMenuDuplicateItem::~cMenuDuplicateItem() {
-  free(fileName);
+  fileName = DuplicateRecording->FileName();
+  SetText(DuplicateRecording->Name().c_str());
 }
 
 // --- cMenuDuplicates -------------------------------------------------------
@@ -491,8 +490,22 @@ eOSState cMenuDuplicates::Delete(void) {
         Recordings->SetModified();
         recordingsStateKey.Remove();
 #endif
-        Set(true);
+        cOsdMenu::Del(Current());
+        // remove items that have less than 2 duplicates
+        int d = 0;
+        for (int i = Count() - 1; i >= 0; i--) {
+          if (!SelectableItem(i)) {
+            if (d < 2) {
+              for (int j = 0; j <= d; j++) {
+                cOsdMenu::Del(i);
+              }
+            }
+            d = 0;
+          } else
+            d++;
+        }
         SetHelpKeys();
+        Display();
       } else
         Skins.Message(mtError, trVDR("Error while deleting recording!"));
     }

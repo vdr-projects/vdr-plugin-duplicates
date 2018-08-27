@@ -21,10 +21,7 @@
 #ifndef LOCK_TIMERS_WRITE
 #define LOCK_TIMERS_WRITE
 #endif
-#ifndef LOCK_RECORDINGS_READ
-#define LOCK_RECORDINGS_READ
-#endif
-class cMenuDuplicateItem;
+
 class cMenuSetupDuplicates;
 
 // --- cMenuDuplicates -------------------------------------------------------
