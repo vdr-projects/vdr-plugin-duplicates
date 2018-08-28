@@ -339,18 +339,7 @@ void cMenuDuplicates::Set(bool Refresh) {
   if (Count() == 0)
     Add(SeparatorItem(cString::sprintf(tr("%d duplicate recordings"), 0)));
   if (Refresh) {
-    if (currentIndex >= 0) {
-      if(currentIndex >= Count())
-        currentIndex = Count() - 1;
-      cOsdItem *current = Get(currentIndex);
-      while (current) {
-        if (current->Selectable()) {
-          SetCurrent(current);
-          break;
-        }
-        current = Prev(current);
-      }
-    }
+    SetCurrentIndex(currentIndex);
     Display();
   }
   gettimeofday(&stopTime, NULL);
@@ -437,6 +426,21 @@ static bool TimerStillRecording(const char *FileName) {
   return false;
 }
 
+void cMenuDuplicates::SetCurrentIndex(int index) {
+  if (index >= 0) {
+    if (index >= Count())
+      index = Count() - 1;
+    cOsdItem *current = Get(index);
+    while (current) {
+      if (current->Selectable()) {
+        SetCurrent(current);
+        break;
+      }
+      current = Prev(current);
+    }
+  }
+}
+
 eOSState cMenuDuplicates::Delete(void) {
   if (HasSubMenu() || Count() == 0)
     return osContinue;
@@ -490,7 +494,8 @@ eOSState cMenuDuplicates::Delete(void) {
         Recordings->SetModified();
         recordingsStateKey.Remove();
 #endif
-        cOsdMenu::Del(Current());
+        int currentIndex = Current();
+        cOsdMenu::Del(currentIndex);
         // remove items that have less than 2 duplicates
         int d = 0;
         for (int i = Count() - 1; i >= 0; i--) {
@@ -504,6 +509,7 @@ eOSState cMenuDuplicates::Delete(void) {
           } else
             d++;
         }
+        SetCurrentIndex(currentIndex);
         SetHelpKeys();
         Display();
       } else

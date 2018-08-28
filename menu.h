@@ -37,6 +37,7 @@ private:
   int helpKeys;
   void SetHelpKeys(void);
   void Set(bool Refresh = false);
+  void SetCurrentIndex(int index);
   eOSState Play(void);
   eOSState Setup(void);
   eOSState Delete(void);
