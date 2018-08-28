@@ -610,8 +610,8 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key) {
       recordingsStateKey.Remove();
 #else
     if (Recordings.StateChanged(recordingsState)) {
-      Set(true);
 #endif
+      Set(true);
     }
     if (Key != kNone)
       SetHelpKeys();
