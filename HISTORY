@@ -1,6 +1,9 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+20??-??-??: Version 1.0.0
+- Dropped support for VDR 2.2.0.
+
 2018-08-29: Version 0.2.0
 
 - Fixed compilation with VDR 2.4.0.

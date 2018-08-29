@@ -13,9 +13,7 @@
 #include <vdr/menu.h>
 #include <vdr/status.h>
 #include <vdr/interface.h>
-#if VDRVERSNUM >= 20301
 #include <vdr/svdrp.h>
-#endif
 
 static inline cOsdItem *SeparatorItem(const char *Label) {
   cOsdItem *Item = new cOsdItem(cString::sprintf("----- %s -----", Label));
@@ -53,9 +51,7 @@ public:
 
 cMenuDuplicate::cMenuDuplicate(const cRecording *Recording)
 :cOsdMenu(trVDR("Recording info")) {
-#if VDRVERSNUM >= 10728
   SetMenuCategory(mcRecording);
-#endif
   recording = Recording;
   SetHelp(trVDR("Button$Play"));
 }
@@ -118,18 +114,9 @@ cMenuDuplicateItem::cMenuDuplicateItem(cDuplicateRecording *DuplicateRecording) 
 // --- cMenuDuplicates -------------------------------------------------------
 
 cMenuDuplicates::cMenuDuplicates()
-#if defined LIEMIKUUTIO || VDRVERSNUM >= 10721
 :cOsdMenu(tr("Duplicate recordings"), 9, 7, 7)
-#else
-:cOsdMenu(tr("Duplicate recordings"), 9, 7)
-#endif
 {
-#if VDRVERSNUM >= 10728
   SetMenuCategory(mcRecording);
-#endif
-#if VDRVERSNUM < 20301
-  Recordings.StateChanged(recordingsState); // just to get the current state
-#endif
   helpKeys = -1;
   Set();
   Display();
@@ -185,7 +172,6 @@ void cMenuDuplicates::Set(bool Refresh) {
   }
 }
 
-#if VDRVERSNUM >= 20301
 static bool HandleRemoteModifications(cTimer *NewTimer, cTimer *OldTimer = NULL) {
   cString ErrorMessage;
   if (!HandleRemoteTimerModifications(NewTimer, OldTimer, &ErrorMessage)) {
@@ -194,41 +180,24 @@ static bool HandleRemoteModifications(cTimer *NewTimer, cTimer *OldTimer = NULL)
   }
   return true;
 }
-#endif
 
 static bool TimerStillRecording(const char *FileName) {
   if (cRecordControl *rc = cRecordControls::GetRecordControl(FileName)) {
     // local timer
     if (Interface->Confirm(trVDR("Timer still recording - really delete?"))) {
-#if VDRVERSNUM >= 20301
       LOCK_TIMERS_WRITE;
-#endif
       if (cTimer *Timer = rc->Timer()) {
         Timer->Skip();
-#if VDRVERSNUM >= 20301
         cRecordControls::Process(Timers, time(NULL));
-#else
-        cRecordControls::Process(time(NULL));
-#endif
         if (Timer->IsSingleEvent()) {
-#if VDRVERSNUM >= 20301
           Timers->Del(Timer);
-#else
-          Timers.Del(Timer);
-#endif
           isyslog("deleted timer %s", *Timer->ToDescr());
         }
-#if VDRVERSNUM >= 20301
         Timers->SetModified();
-#else
-        Timers.SetModified();
-#endif
       }
     } else
       return true; // user didn't confirm deletion
-  }
-#if VDRVERSNUM >= 20301
-  else {
+  } else {
     // remote timer
     cString TimerId = GetRecordingTimerId(FileName);
     if (*TimerId) {
@@ -257,7 +226,6 @@ static bool TimerStillRecording(const char *FileName) {
       }
     }
   }
-#endif
   return false;
 }
 
@@ -302,7 +270,6 @@ eOSState cMenuDuplicates::Delete(void) {
     if (Interface->Confirm(trVDR("Delete recording?"))) {
       if (TimerStillRecording(ri->FileName()))
         return osContinue;
-#if VDRVERSNUM >= 20301
       cString FileName;
       {
         LOCK_RECORDINGS_READ
@@ -315,38 +282,17 @@ eOSState cMenuDuplicates::Delete(void) {
         }
       }
       RecordingsHandler.Del(FileName); // must do this w/o holding a lock, because the cleanup section in cDirCopier::Action() might request one!
-#else
-      cString FileName = ri->FileName();
-      if (RecordingsHandler.GetUsage(FileName)) {
-        if (Interface->Confirm(trVDR("Recording is being edited - really delete?"))) {
-          RecordingsHandler.Del(FileName);
-        } else
-          return osContinue;
-      }
-#endif
       if (cReplayControl::NowReplaying() && strcmp(cReplayControl::NowReplaying(), FileName) == 0)
          cControl::Shutdown();
-#if VDRVERSNUM >= 20301
       cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey);
       Recordings->SetExplicitModify();
       cRecording *recording = Recordings->GetByName(FileName);
-#else
-      cRecording *recording = Recordings.GetByName(FileName);
-#endif
       if (!recording || recording->Delete()) {
-#if VDRVERSNUM >= 20301
         cReplayControl::ClearLastReplayed(FileName);
         Recordings->DelByName(FileName);
-#else
-        cReplayControl::ClearLastReplayed(FileName);
-        Recordings.DelByName(FileName);
-        Recordings.StateChanged(recordingsState); // update state after deletion
-#endif
         cVideoDiskUsage::ForceCheck();
-#if VDRVERSNUM >= 20301
         Recordings->SetModified();
         recordingsStateKey.Remove();
-#endif
         Del(Current());
         SetHelpKeys();
         Display();
@@ -362,18 +308,10 @@ eOSState cMenuDuplicates::Play(void) {
     return osContinue;
   cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current());
   if (ri) {
-#if VDRVERSNUM >= 20301
     LOCK_RECORDINGS_READ;
     const cRecording *recording = Recordings->GetByName(ri->FileName());
-#else
-    cRecording *recording = Recordings.GetByName(ri->FileName());
-#endif
     if (recording) {
-#if VDRVERSNUM >= 10728
       cDuplicatesReplayControl::SetRecording(recording->FileName());
-#else
-      cDuplicatesReplayControl::SetRecording(recording->FileName(), recording->Title());
-#endif
       cControl::Shutdown();
       cControl::Launch(new cDuplicatesReplayControl);
       return osEnd;
@@ -395,12 +333,8 @@ eOSState cMenuDuplicates::Info(void) {
     return osContinue;
   cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current());
   if (ri) {
-#if VDRVERSNUM >= 20301
     LOCK_RECORDINGS_READ;
     const cRecording *recording = Recordings->GetByName(ri->FileName());
-#else
-    cRecording *recording = Recordings.GetByName(ri->FileName());
-#endif
     if (recording && recording->Info()->Title())
       return AddSubMenu(new cMenuDuplicate(recording));
   }
@@ -446,12 +380,8 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key) {
     }
   }
   if (!HasSubMenu()) {
-#if VDRVERSNUM >= 20301
     if (cRecordings::GetRecordingsRead(recordingsStateKey)) {
       recordingsStateKey.Remove();
-#else
-    if (Recordings.StateChanged(recordingsState)) {
-#endif
       Set(true);
     }
     if (Key != kNone)
@@ -463,9 +393,7 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key) {
 // --- cMenuSetupDuplicates --------------------------------------------------
 
 cMenuSetupDuplicates::cMenuSetupDuplicates(cMenuDuplicates *MenuDuplicates) {
-#if VDRVERSNUM >= 10728
   SetMenuCategory(mcSetup);
-#endif
   menuDuplicates = MenuDuplicates;
   Add(new cMenuEditBoolItem(tr("Compare title"), &dc.title));
   Add(new cMenuEditBoolItem(tr("Show hidden"), &dc.hidden));

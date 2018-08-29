@@ -20,11 +20,7 @@ cDuplicateRecording::cDuplicateRecording(void) : visibility(NULL) {
 cDuplicateRecording::cDuplicateRecording(const cRecording *Recording) : visibility(Recording->FileName()) {
   checked = false;
   fileName = std::string(Recording->FileName());
-#if defined LIEMIKUUTIO && LIEMIKUUTIO < 131
-  text = std::string(Recording->Title('\t', true, -1, false));
-#else
   text = std::string(Recording->Title('\t', true));
-#endif
   if (dc.title && Recording->Info()->Title())
      title = std::string(Recording->Info()->Title());
   else
@@ -99,25 +95,17 @@ void cDuplicateRecordings::Update(void) {
   cList<cDuplicateRecording> recordings;
   Clear();
   {
-#if VDRVERSNUM >= 20301
     cStateKey recordingsStateKey;
     cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
     Recordings->Sort();
     for (const cRecording *recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
-#else
-    cThreadLock RecordingsLock(&Recordings);
-    Recordings.Sort();
-    for (cRecording *recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
-#endif
       cDuplicateRecording *Item = new cDuplicateRecording(recording);
       if (Item->HasDescription())
         recordings.Add(Item);
       else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
         descriptionless->Duplicates()->Add(Item);
     }
-#if VDRVERSNUM >= 20301
     recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
-#endif
   }
   for (cDuplicateRecording *recording = recordings.First(); recording; recording = recordings.Next(recording)) {
     if (!recording->Checked()) {

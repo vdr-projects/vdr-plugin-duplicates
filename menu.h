@@ -25,11 +25,7 @@ class cMenuSetupDuplicates;
 class cMenuDuplicates : public cOsdMenu {
   friend class cMenuSetupDuplicates;
 private:
-#if VDRVERSNUM >= 20301
   cStateKey recordingsStateKey;
-#else
-  int recordingsState;
-#endif
   int helpKeys;
   void SetHelpKeys(void);
   void Set(bool Refresh = false);
