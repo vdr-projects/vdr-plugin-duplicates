@@ -100,6 +100,7 @@ void cDuplicateRecordings::Update(void) {
   Clear();
   {
 #if VDRVERSNUM >= 20301
+    cStateKey recordingsStateKey;
     cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
     Recordings->Sort();
     for (const cRecording *recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
