@@ -13,12 +13,9 @@
 #include <vdr/menu.h>
 #include <vdr/status.h>
 #include <vdr/interface.h>
-#include <sys/time.h>
 #if VDRVERSNUM >= 20301
 #include <vdr/svdrp.h>
 #endif
-#include <string>
-#include <sstream>
 
 static inline cOsdItem *SeparatorItem(const char *Label) {
   cOsdItem *Item = new cOsdItem(cString::sprintf("----- %s -----", Label));
@@ -101,88 +98,6 @@ eOSState cMenuDuplicate::ProcessKey(eKeys Key)
   return state;
 }
 
-// --- cDuplicateRecording -------------------------------------------------------
-
-class cDuplicateRecording : public cListObject {
-private:
-  bool checked;
-  cVisibility visibility;
-  std::string fileName;
-  std::string name;
-  std::string title;
-  std::string description;
-public:
-  cDuplicateRecording(const cRecording *Recording);
-  cDuplicateRecording(const cDuplicateRecording &DuplicateRecording);
-  bool HasDescription(void) const { return ! description.empty(); }
-  bool IsDuplicate(cDuplicateRecording *DuplicateRecording);
-  void SetChecked(bool chkd = true) { checked = chkd; }
-  bool Checked() { return checked; }
-  cVisibility Visibility() { return visibility; }
-  std::string FileName(void) { return fileName; }
-  std::string Name(void) { return name; }
-};
-
-cDuplicateRecording::cDuplicateRecording(const cRecording *Recording) : visibility(Recording->FileName()) {
-  checked = false;
-  fileName = std::string(Recording->FileName());
-#if defined LIEMIKUUTIO && LIEMIKUUTIO < 131
-  name = std::string(Recording->Title('\t', true, -1, false));
-#else
-  name = std::string(Recording->Title('\t', true));
-#endif
-  if (dc.title && Recording->Info()->Title())
-     title = std::string(Recording->Info()->Title());
-  else
-     title = std::string();
-  std::stringstream desc;
-  if (Recording->Info()->ShortText())
-     desc << std::string(Recording->Info()->ShortText());
-  if (Recording->Info()->Description())
-     desc << std::string(Recording->Info()->Description());
-  description = desc.str();
-  while(true) {
-    size_t found = description.find("|");
-    if (found == std::string::npos)
-       break;
-    description.replace(found, 1, "");
-  }
-  while(true) {
-    size_t found = description.find(" ");
-    if (found == std::string::npos)
-       break;
-    description.replace(found, 1, "");
-  }
-}
-
-cDuplicateRecording::cDuplicateRecording(const cDuplicateRecording &DuplicateRecording) :
-  checked(DuplicateRecording.checked),
-  visibility(DuplicateRecording.visibility),
-  fileName(DuplicateRecording.fileName),
-  name(DuplicateRecording.name),
-  title(DuplicateRecording.title),
-  description(DuplicateRecording.description) {}
-
-bool cDuplicateRecording::IsDuplicate(cDuplicateRecording *DuplicateRecording) {
-  if (!HasDescription() || !DuplicateRecording->HasDescription())
-    return false;
-
-  size_t found;
-  if (dc.title) {
-    found = title.size() > DuplicateRecording->title.size() ?
-              title.find(DuplicateRecording->title) : DuplicateRecording->title.find(title);
-    if (found == std::string::npos)
-      return false;
-  }
-
-  found = description.size() > DuplicateRecording->description.size() ?
-            description.find(DuplicateRecording->description) : DuplicateRecording->description.find(description);
-  if (found != std::string::npos)
-    return true;
-
-  return false;
-}
-
 // --- cMenuDuplicateItem ----------------------------------------------------
 
 class cMenuDuplicateItem : public cOsdItem {
@@ -197,7 +112,7 @@ public:
 
 cMenuDuplicateItem::cMenuDuplicateItem(cDuplicateRecording *DuplicateRecording) : visibility(DuplicateRecording->Visibility()) {
   fileName = DuplicateRecording->FileName();
-  SetText(DuplicateRecording->Name().c_str());
+  SetText(DuplicateRecording->Text());
 }
 
 // --- cMenuDuplicates -------------------------------------------------------
@@ -245,96 +160,22 @@ void cMenuDuplicates::SetHelpKeys(void) {
 }
 
 void cMenuDuplicates::Set(bool Refresh) {
-  struct timeval startTime, stopTime;
-  gettimeofday(&startTime, NULL);
-#ifdef DEBUG_VISIBILITY
-  cVisibility::ClearCounters();
-  int isDuplicateCount = 0, menuDuplicateItemCount = 0;
-#endif
+  DuplicateRecordings.Update();
   const char *CurrentRecording = NULL;
   int currentIndex = -1;
   if (Refresh)
     currentIndex = Current();
   else
     CurrentRecording = cReplayControl::LastReplayed();
-  cList<cDuplicateRecording> descriptionless;
-  cList<cDuplicateRecording> recordings;
-  Clear();
-  {
-#if VDRVERSNUM >= 20301
-    cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
-    Recordings->Sort();
-    for (const cRecording *recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
-#else
-    cThreadLock RecordingsLock(&Recordings);
-    Recordings.Sort();
-    for (cRecording *recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
-#endif
-      cDuplicateRecording *Item = new cDuplicateRecording(recording);
-      if (Item->HasDescription())
-        recordings.Add(Item);
-      else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
-        descriptionless.Add(Item);
-    }
-#if VDRVERSNUM >= 20301
-    recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
-#endif
-  }
-  for (cDuplicateRecording *recording = recordings.First(); recording; recording = recordings.Next(recording)) {
-    if (!recording->Checked()) {
-      recording->SetChecked();
-      cList<cDuplicateRecording> duplicates;
-      duplicates.Add(new cDuplicateRecording(*recording));
-      for (cDuplicateRecording *compare = recordings.First(); compare; compare = recordings.Next(compare)) {
-        if (!compare->Checked()) {
-#ifdef DEBUG_VISIBILITY
-          isDuplicateCount++;
-#endif
-          if (recording->IsDuplicate(compare)) {
-            duplicates.Add(new cDuplicateRecording(*compare));
-            compare->SetChecked();
-          }
-        }
-      }
-      int count = duplicates.Count();
-      if (!dc.hidden && count > 1) {
-        for (cDuplicateRecording *DuplicateRecording = duplicates.First(); DuplicateRecording; DuplicateRecording = duplicates.Next(DuplicateRecording)) {
-          if (DuplicateRecording->Visibility().Read() == HIDDEN)
-            count--;
-        }
-      }
-      if (count > 1) {
-        Add(SeparatorItem(cString::sprintf(tr("%d duplicate recordings"), duplicates.Count())));
-        for (cDuplicateRecording *DuplicateRecording = duplicates.First(); DuplicateRecording; DuplicateRecording = duplicates.Next(DuplicateRecording)) {
-          if (dc.hidden || DuplicateRecording->Visibility().Read() != HIDDEN) {
-            cMenuDuplicateItem *Item = new cMenuDuplicateItem(DuplicateRecording);
-#ifdef DEBUG_VISIBILITY
-            menuDuplicateItemCount++;
-#endif
-            if (*Item->Text()) {
-              Add(Item);
-              if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
-                SetCurrent(Item);
-            } else
-              delete Item;
-          }
-        }
-      }
-    }
-  }
-  if (descriptionless.Count() > 0)
-    Add(SeparatorItem(cString::sprintf(tr("%d recordings without description"), descriptionless.Count())));
-  for (cDuplicateRecording *DescriptionlessRecording = descriptionless.First(); DescriptionlessRecording; DescriptionlessRecording = descriptionless.Next(DescriptionlessRecording)) {
-    cMenuDuplicateItem *Item = new cMenuDuplicateItem(DescriptionlessRecording);
-#ifdef DEBUG_VISIBILITY
-    menuDuplicateItemCount++;
-#endif
-    if (*Item->Text()) {
+  cMutexLock MutexLock(&DuplicateRecordings.mutex);
+  for (cDuplicateRecording *Duplicates = DuplicateRecordings.First(); Duplicates; Duplicates = DuplicateRecordings.Next(Duplicates)) {
+    Add(SeparatorItem(Duplicates->Text()));
+    for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
+      cMenuDuplicateItem *Item = new cMenuDuplicateItem(Duplicate);
       Add(Item);
       if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
         SetCurrent(Item);
-    } else
-      delete Item;
+    }
   }
   if (Count() == 0)
     Add(SeparatorItem(cString::sprintf(tr("%d duplicate recordings"), 0)));
@@ -342,14 +183,6 @@ void cMenuDuplicates::Set(bool Refresh) {
     SetCurrentIndex(currentIndex);
     Display();
   }
-  gettimeofday(&stopTime, NULL);
-  double seconds = (((long long)stopTime.tv_sec * 1000000 + stopTime.tv_usec) - ((long long)startTime.tv_sec * 1000000 + startTime.tv_usec)) / 1000000.0;
-#ifdef DEBUG_VISIBILITY
-  dsyslog("duplicates: Displaying of duplicates took %.2f seconds, is duplicate count %d, get count %d, read count %d, access count %d, duplicate item count %d.",
-    seconds, isDuplicateCount, cVisibility::getCount, cVisibility::readCount, cVisibility::accessCount, menuDuplicateItemCount);
-#else
-  dsyslog("duplicates: Displaying of duplicates took %.2f seconds.", seconds);
-#endif
 }
 
 #if VDRVERSNUM >= 20301
@@ -367,7 +200,9 @@ static bool TimerStillRecording(const char *FileName) {
   if (cRecordControl *rc = cRecordControls::GetRecordControl(FileName)) {
     // local timer
     if (Interface->Confirm(trVDR("Timer still recording - really delete?"))) {
+#if VDRVERSNUM >= 20301
       LOCK_TIMERS_WRITE;
+#endif
       if (cTimer *Timer = rc->Timer()) {
         Timer->Skip();
 #if VDRVERSNUM >= 20301
@@ -441,6 +276,24 @@ void cMenuDuplicates::SetCurrentIndex(int index) {
   }
 }
 
+void cMenuDuplicates::Del(int index) {
+  cOsdMenu::Del(index);
+  // remove items that have less than 2 duplicates
+  int d = 0;
+  for (int i = Count() - 1; i >= 0; i--) {
+    if (!SelectableItem(i)) {
+      if (d < 2) {
+        for (int j = 0; j <= d; j++) {
+          cOsdMenu::Del(i);
+        }
+      }
+      d = 0;
+    } else
+      d++;
+  }
+  SetCurrentIndex(index);
+}
+
 eOSState cMenuDuplicates::Delete(void) {
   if (HasSubMenu() || Count() == 0)
     return osContinue;
@@ -494,22 +347,7 @@ eOSState cMenuDuplicates::Delete(void) {
         Recordings->SetModified();
         recordingsStateKey.Remove();
 #endif
-        int currentIndex = Current();
-        cOsdMenu::Del(currentIndex);
-        // remove items that have less than 2 duplicates
-        int d = 0;
-        for (int i = Count() - 1; i >= 0; i--) {
-          if (!SelectableItem(i)) {
-            if (d < 2) {
-              for (int j = 0; j <= d; j++) {
-                cOsdMenu::Del(i);
-              }
-            }
-            d = 0;
-          } else
-            d++;
-        }
-        SetCurrentIndex(currentIndex);
+        Del(Current());
         SetHelpKeys();
         Display();
       } else
@@ -577,11 +415,14 @@ eOSState cMenuDuplicates::ToggleHidden(void) {
     bool hidden = ri->Visibility().Read() == HIDDEN;
     if (Interface->Confirm(hidden ? tr("Unhide recording?") : tr("Hide recording?"))) {
       if (ri->Visibility().Write(hidden)) {
-        if (dc.hidden)
+        if (dc.hidden) {
           ri->Visibility().Set(!hidden);
-        else
-          Set(true);
-        SetHelpKeys();
+          SetHelpKeys();
+        } else {
+          Del(Current());
+          SetHelpKeys();
+          Display();
+        }
       } else
         Skins.Message(mtError, tr("Error while setting visibility!"));
     }

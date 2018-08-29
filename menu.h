@@ -16,11 +16,7 @@
 #include <vdr/menuitems.h>
 #include <vdr/videodir.h>
 #include "config.h"
-
-// Define empty locking macros for backwards compatibility
-#ifndef LOCK_TIMERS_WRITE
-#define LOCK_TIMERS_WRITE
-#endif
+#include "recording.h"
 
 class cMenuSetupDuplicates;
 
@@ -38,6 +34,7 @@ private:
   void SetHelpKeys(void);
   void Set(bool Refresh = false);
   void SetCurrentIndex(int index);
+  void Del(int index);
   eOSState Play(void);
   eOSState Setup(void);
   eOSState Delete(void);

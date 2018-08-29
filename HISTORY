@@ -1,6 +1,12 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2018-08-29: Version 0.2.0
+
+- Fixed compilation with VDR 2.4.0.
+- Improved delete and hide performance.
+- Refactored duplicate detection to own classes.
+
 2015-08-31: Version 0.1.0
 
 - Added hiding of duplicate recordings.

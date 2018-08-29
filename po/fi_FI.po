@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vdr-duplicates 0.0.1\n"
 "Report-Msgid-Bugs-To: <see README>\n"
-"POT-Creation-Date: 2018-08-24 13:00+0300\n"
+"POT-Creation-Date: 2018-08-28 14:43+0300\n"
 "PO-Revision-Date: 2011-12-12 19:57+0300\n"
 "Last-Translator: Timo Eskola <timo@tolleri.net>\n"
 "Language-Team: Finnish\n"
@@ -34,10 +34,6 @@ msgstr "Älä piilota"
 msgid "%d duplicate recordings"
 msgstr "%d päällekkäistä tallennetta"
 
-#, c-format
-msgid "%d recordings without description"
-msgstr "%d tallennetta ilman kuvausta"
-
 msgid "Unhide recording?"
 msgstr "Älä piilota tallennetta?"
 
@@ -52,3 +48,7 @@ msgstr "Vertaa otsikkoa"
 
 msgid "Show hidden"
 msgstr "Näytä piilotetut"
+
+#, c-format
+msgid "%d recordings without description"
+msgstr "%d tallennetta ilman kuvausta"
