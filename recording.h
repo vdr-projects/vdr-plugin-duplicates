@@ -40,13 +40,31 @@ public:
   cList<cDuplicateRecording> *Duplicates(void) { return duplicates; }
 };
 
+// --- cDuplicateRecordings ------------------------------------------------------
+
 class cDuplicateRecordings : public cList<cDuplicateRecording> {
 public:
   cDuplicateRecordings(void);
-  cMutex mutex;
-  void Update(void);
 };
 
 extern cDuplicateRecordings DuplicateRecordings;
+
+// --- cDuplicateRecordingScannerThread ------------------------------------------
+
+class cDuplicateRecordingScannerThread : public cThread {
+private:
+  cStateKey recordingsStateKey;
+  int title;
+  int hidden;
+  void Scan(void);
+protected:
+  virtual void Action(void);
+public:
+  cDuplicateRecordingScannerThread();
+  ~cDuplicateRecordingScannerThread();
+  void Stop(void);
+};
+
+extern cDuplicateRecordingScannerThread DuplicateRecordingScanner;
 
 #endif

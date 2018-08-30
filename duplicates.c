@@ -10,7 +10,7 @@
 #include <vdr/plugin.h>
 #include "config.h"
 #include "menu.h"
-#include "visibility.h"
+#include "recording.h"
 
 static const char *VERSION        = "1.0.0-SNAPSHOT";
 static const char *DESCRIPTION    = trNOOP("Shows duplicate recordings");
@@ -69,11 +69,13 @@ bool cPluginDuplicates::Initialize(void) {
 
 bool cPluginDuplicates::Start(void) {
   // Start any background activities the plugin shall perform.
+  DuplicateRecordingScanner.Start();
   return true;
 }
 
 void cPluginDuplicates::Stop(void) {
   // Stop any background activities the plugin is performing.
+  DuplicateRecordingScanner.Stop();
 }
 
 void cPluginDuplicates::Housekeeping(void) {

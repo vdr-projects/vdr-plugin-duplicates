@@ -25,7 +25,7 @@ class cMenuSetupDuplicates;
 class cMenuDuplicates : public cOsdMenu {
   friend class cMenuSetupDuplicates;
 private:
-  cStateKey recordingsStateKey;
+  cStateKey duplicateRecordingsStateKey;
   int helpKeys;
   void SetHelpKeys(void);
   void Set(bool Refresh = false);

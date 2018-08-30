@@ -147,28 +147,29 @@ void cMenuDuplicates::SetHelpKeys(void) {
 }
 
 void cMenuDuplicates::Set(bool Refresh) {
-  DuplicateRecordings.Update();
-  const char *CurrentRecording = NULL;
-  int currentIndex = -1;
-  if (Refresh)
-    currentIndex = Current();
-  else
-    CurrentRecording = cReplayControl::LastReplayed();
-  cMutexLock MutexLock(&DuplicateRecordings.mutex);
-  for (cDuplicateRecording *Duplicates = DuplicateRecordings.First(); Duplicates; Duplicates = DuplicateRecordings.Next(Duplicates)) {
-    Add(SeparatorItem(Duplicates->Text()));
-    for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
-      cMenuDuplicateItem *Item = new cMenuDuplicateItem(Duplicate);
-      Add(Item);
-      if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
-        SetCurrent(Item);
+  if (DuplicateRecordings.Lock(duplicateRecordingsStateKey)) {
+    const char *CurrentRecording = NULL;
+    int currentIndex = -1;
+    if (Refresh)
+      currentIndex = Current();
+    else
+      CurrentRecording = cReplayControl::LastReplayed();
+    for (cDuplicateRecording *Duplicates = DuplicateRecordings.First(); Duplicates; Duplicates = DuplicateRecordings.Next(Duplicates)) {
+      Add(SeparatorItem(Duplicates->Text()));
+      for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
+        cMenuDuplicateItem *Item = new cMenuDuplicateItem(Duplicate);
+        Add(Item);
+        if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
+          SetCurrent(Item);
+      }
     }
-  }
-  if (Count() == 0)
-    Add(SeparatorItem(cString::sprintf(tr("%d duplicate recordings"), 0)));
-  if (Refresh) {
-    SetCurrentIndex(currentIndex);
-    Display();
+    duplicateRecordingsStateKey.Remove();
+    if (Count() == 0)
+      Add(SeparatorItem(cString::sprintf(tr("%d duplicate recordings"), 0)));
+    if (Refresh) {
+      SetCurrentIndex(currentIndex);
+      Display();
+    }
   }
 }
 
@@ -284,6 +285,7 @@ eOSState cMenuDuplicates::Delete(void) {
       RecordingsHandler.Del(FileName); // must do this w/o holding a lock, because the cleanup section in cDirCopier::Action() might request one!
       if (cReplayControl::NowReplaying() && strcmp(cReplayControl::NowReplaying(), FileName) == 0)
          cControl::Shutdown();
+      cStateKey recordingsStateKey;  
       cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey);
       Recordings->SetExplicitModify();
       cRecording *recording = Recordings->GetByName(FileName);
@@ -380,10 +382,7 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key) {
     }
   }
   if (!HasSubMenu()) {
-    if (cRecordings::GetRecordingsRead(recordingsStateKey)) {
-      recordingsStateKey.Remove();
-      Set(true);
-    }
+    Set(true);
     if (Key != kNone)
       SetHelpKeys();
   }
