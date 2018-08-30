@@ -154,6 +154,7 @@ void cMenuDuplicates::Set(bool Refresh) {
       currentIndex = Current();
     else
       CurrentRecording = cReplayControl::LastReplayed();
+    Clear();
     for (cDuplicateRecording *Duplicates = DuplicateRecordings.First(); Duplicates; Duplicates = DuplicateRecordings.Next(Duplicates)) {
       Add(SeparatorItem(Duplicates->Text()));
       for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
