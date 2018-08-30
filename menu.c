@@ -167,6 +167,7 @@ void cMenuDuplicates::Set(bool Refresh) {
     currentIndex = Current();
   else
     CurrentRecording = cReplayControl::LastReplayed();
+  Clear();
   cMutexLock MutexLock(&DuplicateRecordings.mutex);
   for (cDuplicateRecording *Duplicates = DuplicateRecordings.First(); Duplicates; Duplicates = DuplicateRecordings.Next(Duplicates)) {
     Add(SeparatorItem(Duplicates->Text()));

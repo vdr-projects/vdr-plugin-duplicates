@@ -1,6 +1,10 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2018-08-30: Version 0.2.1
+
+- Fixed menu updating.
+
 2018-08-29: Version 0.2.0
 
 - Fixed compilation with VDR 2.4.0.
