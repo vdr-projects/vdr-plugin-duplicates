@@ -12,7 +12,7 @@
 #include "menu.h"
 #include "visibility.h"
 
-static const char *VERSION        = "0.2.0";
+static const char *VERSION        = "0.2.1";
 static const char *DESCRIPTION    = trNOOP("Shows duplicate recordings");
 static const char *MAINMENUENTRY  = trNOOP("Duplicate recordings");
 
