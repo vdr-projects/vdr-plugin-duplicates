@@ -121,10 +121,6 @@ void cDuplicateRecordingScannerThread::Scan(void) {
   gettimeofday(&startTime, NULL);
   cStateKey duplicateRecordingsStateKey;
   DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
-#ifdef DEBUG_VISIBILITY
-  cVisibility::ClearCounters();
-  int isDuplicateCount = 0;
-#endif
   cDuplicateRecording *descriptionless = new cDuplicateRecording();
   cList<cDuplicateRecording> recordings;
   DuplicateRecordings.Clear();
@@ -151,9 +147,6 @@ void cDuplicateRecordingScannerThread::Scan(void) {
       duplicates->Duplicates()->Add(new cDuplicateRecording(*recording));
       for (cDuplicateRecording *compare = recordings.First(); compare; compare = recordings.Next(compare)) {
         if (!compare->Checked()) {
-#ifdef DEBUG_VISIBILITY
-          isDuplicateCount++;
-#endif
           if (recording->IsDuplicate(compare)) {
             duplicates->Duplicates()->Add(new cDuplicateRecording(*compare));
             compare->SetChecked();
@@ -175,12 +168,7 @@ void cDuplicateRecordingScannerThread::Scan(void) {
   duplicateRecordingsStateKey.Remove();
   gettimeofday(&stopTime, NULL);
   double seconds = (((long long)stopTime.tv_sec * 1000000 + stopTime.tv_usec) - ((long long)startTime.tv_sec * 1000000 + startTime.tv_usec)) / 1000000.0;
-#ifdef DEBUG_VISIBILITY
-  dsyslog("duplicates: Scanning of duplicates took %.2f seconds, is duplicate count %d, get count %d, read count %d, access count %d.",
-    seconds, isDuplicateCount, cVisibility::getCount, cVisibility::readCount, cVisibility::accessCount);
-#else
   dsyslog("duplicates: Scanning of duplicates took %.2f seconds.", seconds);
-#endif
 }
 
 cDuplicateRecordingScannerThread DuplicateRecordingScanner;
