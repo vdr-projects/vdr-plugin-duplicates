@@ -1,6 +1,10 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2018-08-31: Version 0.2.2
+
+- Updated kNone handling in main menu.
+
 2018-08-30: Version 0.2.1
 
 - Fixed menu updating bug introduced in version 0.2.0.
