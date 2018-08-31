@@ -379,11 +379,12 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key) {
       case kOk:
       case kInfo:   return Info();
       case kBlue:   return ToggleHidden();
+      case kNone:   Set(true);
+                    break;
       default: break;
     }
   }
   if (!HasSubMenu()) {
-    Set(true);
     if (Key != kNone)
       SetHelpKeys();
   }
