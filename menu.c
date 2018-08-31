@@ -443,18 +443,20 @@ eOSState cMenuDuplicates::ProcessKey(eKeys Key) {
       case kOk:
       case kInfo:   return Info();
       case kBlue:   return ToggleHidden();
+      case kNone:
+#if VDRVERSNUM >= 20301
+                    if (cRecordings::GetRecordingsRead(recordingsStateKey)) {
+                      recordingsStateKey.Remove();
+#else
+                    if (Recordings.StateChanged(recordingsState)) {
+#endif
+                      Set(true);
+                    }
+                    break;
       default: break;
     }
   }
   if (!HasSubMenu()) {
-#if VDRVERSNUM >= 20301
-    if (cRecordings::GetRecordingsRead(recordingsStateKey)) {
-      recordingsStateKey.Remove();
-#else
-    if (Recordings.StateChanged(recordingsState)) {
-#endif
-      Set(true);
-    }
     if (Key != kNone)
       SetHelpKeys();
   }
