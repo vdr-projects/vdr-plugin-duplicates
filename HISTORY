@@ -1,9 +1,10 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
-2018-08-31: Version 0.2.2
+2018-09-01: Version 0.2.2
 
 - Updated kNone handling in main menu.
+- Improved duplicate recording copy constructor.
 
 2018-08-30: Version 0.2.1
 
