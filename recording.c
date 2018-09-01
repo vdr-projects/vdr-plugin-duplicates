@@ -52,8 +52,15 @@ cDuplicateRecording::cDuplicateRecording(const cDuplicateRecording &DuplicateRec
   fileName(DuplicateRecording.fileName),
   text(DuplicateRecording.text),
   title(DuplicateRecording.title),
-  description(DuplicateRecording.description),
-  duplicates(DuplicateRecording.duplicates) {}
+  description(DuplicateRecording.description) {
+  if (DuplicateRecording.duplicates != NULL) {
+    duplicates = new cList<cDuplicateRecording>;
+    for (const cDuplicateRecording *duplicate = DuplicateRecording.duplicates->First(); duplicate; duplicate = DuplicateRecording.duplicates->Next(duplicate)) {
+      duplicates->Add(new cDuplicateRecording(*duplicate));
+    }
+  } else
+    duplicates = NULL;
+}
 
 cDuplicateRecording::~cDuplicateRecording() {
   delete duplicates;
