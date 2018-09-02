@@ -103,7 +103,7 @@ cDuplicateRecordingScannerThread::~cDuplicateRecordingScannerThread(){
   Stop();
 }
 
-void cDuplicateRecordingScannerThread::Stop() {
+void cDuplicateRecordingScannerThread::Stop(void) {
   Cancel(3);
 }
 
@@ -141,8 +141,10 @@ void cDuplicateRecordingScannerThread::Scan(void) {
   recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
   cList<cDuplicateRecording> duplicates;
   for (cDuplicateRecording *recording = recordings.First(); recording; recording = recordings.Next(recording)) {
-    if (!Running())
+    if (!Running() || RecordingsStateChanged()) {
+      delete descriptionless;
       return;
+    }
     if (cIoThrottle::Engaged())
       cCondWait::SleepMs(100);
     if (!recording->Checked()) {
@@ -171,14 +173,27 @@ void cDuplicateRecordingScannerThread::Scan(void) {
     delete descriptionless;
   cStateKey duplicateRecordingsStateKey;
   DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
-  DuplicateRecordings.Clear();
-  for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {
-    DuplicateRecordings.Add(new cDuplicateRecording(*duplicate));
-  }
-  duplicateRecordingsStateKey.Remove();
+  if (!RecordingsStateChanged()) {
+    DuplicateRecordings.Clear();
+    for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {
+      DuplicateRecordings.Add(new cDuplicateRecording(*duplicate));
+    }
+    duplicateRecordingsStateKey.Remove();
+  } else
+    duplicateRecordingsStateKey.Remove(false);
   gettimeofday(&stopTime, NULL);
   double seconds = (((long long)stopTime.tv_sec * 1000000 + stopTime.tv_usec) - ((long long)startTime.tv_sec * 1000000 + startTime.tv_usec)) / 1000000.0;
   dsyslog("duplicates: Scanning of duplicates took %.2f seconds.", seconds);
+}
+
+bool cDuplicateRecordingScannerThread::RecordingsStateChanged(void) {
+  if (cRecordings::GetRecordingsRead(recordingsStateKey)) {
+    recordingsStateKey.Reset();
+    recordingsStateKey.Remove();
+    dsyslog("duplicates: Recordings state changed while scanning.");
+    return true;
+  }
+  return false;
 }
 
 cDuplicateRecordingScannerThread DuplicateRecordingScanner;

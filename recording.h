@@ -57,6 +57,7 @@ private:
   int title;
   int hidden;
   void Scan(void);
+  bool RecordingsStateChanged(void);
 protected:
   virtual void Action(void);
 public:

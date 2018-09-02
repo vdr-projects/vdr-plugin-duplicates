@@ -148,7 +148,7 @@ void cMenuDuplicates::SetHelpKeys(void) {
 
 void cMenuDuplicates::Set(bool Refresh) {
   if (DuplicateRecordings.Lock(duplicateRecordingsStateKey)) {
-      dsyslog("duplicates: %s menu.", Refresh ? "Refreshing" : "Creating");
+    dsyslog("duplicates: %s menu.", Refresh ? "Refreshing" : "Creating");
     const char *CurrentRecording = NULL;
     int currentIndex = -1;
     if (Refresh)
@@ -269,7 +269,7 @@ eOSState cMenuDuplicates::Delete(void) {
   if (HasSubMenu() || Count() == 0)
     return osContinue;
   if (cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current())) {
-      const char *FileName = ri->FileName();
+    const char *FileName = ri->FileName();
     if (Interface->Confirm(trVDR("Delete recording?"))) {
       if (TimerStillRecording(FileName))
         return osContinue;
@@ -301,8 +301,8 @@ eOSState cMenuDuplicates::Delete(void) {
         SetHelpKeys();
         Display();
       } else {
-        Skins.Message(mtError, trVDR("Error while deleting recording!"));
         recordingsStateKey.Remove();
+        Skins.Message(mtError, trVDR("Error while deleting recording!"));
       }
     }
   }
