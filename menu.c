@@ -353,6 +353,9 @@ eOSState cMenuDuplicates::Delete(void) {
         Display();
       } else
         Skins.Message(mtError, trVDR("Error while deleting recording!"));
+#if VDRVERSNUM >= 20301
+      recordingsStateKey.Remove();
+#endif
     }
   }
   return osContinue;
