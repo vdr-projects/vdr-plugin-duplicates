@@ -286,7 +286,7 @@ eOSState cMenuDuplicates::Delete(void) {
       RecordingsHandler.Del(FileName); // must do this w/o holding a lock, because the cleanup section in cDirCopier::Action() might request one!
       if (cReplayControl::NowReplaying() && strcmp(cReplayControl::NowReplaying(), FileName) == 0)
          cControl::Shutdown();
-      cStateKey recordingsStateKey;  
+      cStateKey recordingsStateKey;
       cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey);
       Recordings->SetExplicitModify();
       cRecording *recording = Recordings->GetByName(FileName);

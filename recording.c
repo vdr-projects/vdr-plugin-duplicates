@@ -96,7 +96,7 @@ cDuplicateRecordings DuplicateRecordings;
 
 cDuplicateRecordingScannerThread::cDuplicateRecordingScannerThread() : cThread("duplicate recording scanner", true) {
   title = dc.title;
-  hidden = dc.hidden;  
+  hidden = dc.hidden;
 }
 
 cDuplicateRecordingScannerThread::~cDuplicateRecordingScannerThread(){
@@ -124,25 +124,22 @@ void cDuplicateRecordingScannerThread::Action(void) {
 }
 
 void cDuplicateRecordingScannerThread::Scan(void) {
+  dsyslog("duplicates: Scanning of duplicates started.");
   struct timeval startTime, stopTime;
   gettimeofday(&startTime, NULL);
-  cStateKey duplicateRecordingsStateKey;
-  DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
   cDuplicateRecording *descriptionless = new cDuplicateRecording();
   cList<cDuplicateRecording> recordings;
-  DuplicateRecordings.Clear();
-  {
-    cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
-    Recordings->Sort();
-    for (const cRecording *recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
-      cDuplicateRecording *Item = new cDuplicateRecording(recording);
-      if (Item->HasDescription())
-        recordings.Add(Item);
-      else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
-        descriptionless->Duplicates()->Add(Item);
-    }
-    recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
+  cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
+  Recordings->Sort();
+  for (const cRecording *recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
+    cDuplicateRecording *Item = new cDuplicateRecording(recording);
+    if (Item->HasDescription())
+      recordings.Add(Item);
+    else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
+      descriptionless->Duplicates()->Add(Item);
   }
+  recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
+  cList<cDuplicateRecording> duplicates;
   for (cDuplicateRecording *recording = recordings.First(); recording; recording = recordings.Next(recording)) {
     if (!Running())
       return;
@@ -150,28 +147,34 @@ void cDuplicateRecordingScannerThread::Scan(void) {
       cCondWait::SleepMs(100);
     if (!recording->Checked()) {
       recording->SetChecked();
-      cDuplicateRecording *duplicates = new cDuplicateRecording();
-      duplicates->Duplicates()->Add(new cDuplicateRecording(*recording));
+      cDuplicateRecording *duplicate = new cDuplicateRecording();
+      duplicate->Duplicates()->Add(new cDuplicateRecording(*recording));
       for (cDuplicateRecording *compare = recordings.First(); compare; compare = recordings.Next(compare)) {
         if (!compare->Checked()) {
           if (recording->IsDuplicate(compare)) {
-            duplicates->Duplicates()->Add(new cDuplicateRecording(*compare));
+            duplicate->Duplicates()->Add(new cDuplicateRecording(*compare));
             compare->SetChecked();
           }
         }
       }
-      if (duplicates->Duplicates()->Count() > 1) {
-        duplicates->SetText(cString::sprintf(tr("%d duplicate recordings"), duplicates->Duplicates()->Count()));
-        DuplicateRecordings.Add(duplicates);
+      if (duplicate->Duplicates()->Count() > 1) {
+        duplicate->SetText(cString::sprintf(tr("%d duplicate recordings"), duplicate->Duplicates()->Count()));
+        duplicates.Add(duplicate);
       } else
-        delete duplicates;
+        delete duplicate;
     }
   }
   if (descriptionless->Duplicates()->Count() > 0) {
     descriptionless->SetText(cString::sprintf(tr("%d recordings without description"), descriptionless->Duplicates()->Count()));
-    DuplicateRecordings.Add(descriptionless);
+    duplicates.Add(descriptionless);
   } else
     delete descriptionless;
+  cStateKey duplicateRecordingsStateKey;
+  DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
+  DuplicateRecordings.Clear();
+  for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {
+    DuplicateRecordings.Add(new cDuplicateRecording(*duplicate));
+  }
   duplicateRecordingsStateKey.Remove();
   gettimeofday(&stopTime, NULL);
   double seconds = (((long long)stopTime.tv_sec * 1000000 + stopTime.tv_usec) - ((long long)startTime.tv_sec * 1000000 + startTime.tv_usec)) / 1000000.0;
