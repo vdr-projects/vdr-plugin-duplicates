@@ -302,6 +302,7 @@ eOSState cMenuDuplicates::Delete(void) {
         Display();
       } else
         Skins.Message(mtError, trVDR("Error while deleting recording!"));
+      recordingsStateKey.Remove();
     }
   }
   return osContinue;
