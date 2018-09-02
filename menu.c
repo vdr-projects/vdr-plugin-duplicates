@@ -148,6 +148,7 @@ void cMenuDuplicates::SetHelpKeys(void) {
 
 void cMenuDuplicates::Set(bool Refresh) {
   if (DuplicateRecordings.Lock(duplicateRecordingsStateKey)) {
+      dsyslog("duplicates: %s menu.", Refresh ? "Refreshing" : "Creating");
     const char *CurrentRecording = NULL;
     int currentIndex = -1;
     if (Refresh)
@@ -267,15 +268,14 @@ void cMenuDuplicates::Del(int index) {
 eOSState cMenuDuplicates::Delete(void) {
   if (HasSubMenu() || Count() == 0)
     return osContinue;
-  cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current());
-  if (ri) {
+  if (cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current())) {
+      const char *FileName = ri->FileName();
     if (Interface->Confirm(trVDR("Delete recording?"))) {
-      if (TimerStillRecording(ri->FileName()))
+      if (TimerStillRecording(FileName))
         return osContinue;
-      cString FileName;
       {
         LOCK_RECORDINGS_READ
-        if (const cRecording *Recording = Recordings->GetByName(ri->FileName())) {
+        if (const cRecording *Recording = Recordings->GetByName(FileName)) {
           FileName = Recording->FileName();
           if (RecordingsHandler.GetUsage(FileName)) {
             if (!Interface->Confirm(trVDR("Recording is being edited - really delete?")))
@@ -283,6 +283,7 @@ eOSState cMenuDuplicates::Delete(void) {
           }
         }
       }
+      dsyslog("duplicates: Deleting recording %s.", FileName);
       RecordingsHandler.Del(FileName); // must do this w/o holding a lock, because the cleanup section in cDirCopier::Action() might request one!
       if (cReplayControl::NowReplaying() && strcmp(cReplayControl::NowReplaying(), FileName) == 0)
          cControl::Shutdown();
