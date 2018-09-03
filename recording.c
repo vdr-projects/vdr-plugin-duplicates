@@ -119,7 +119,7 @@ void cDuplicateRecordingScannerThread::Action(void) {
       Scan();
     }
     if (Running())
-      cCondWait::SleepMs(250);
+      cCondWait::SleepMs(500);
   }
 }
 
@@ -171,16 +171,15 @@ void cDuplicateRecordingScannerThread::Scan(void) {
     duplicates.Add(descriptionless);
   } else
     delete descriptionless;
+  if (RecordingsStateChanged())
+    return;
   cStateKey duplicateRecordingsStateKey;
   DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
-  if (!RecordingsStateChanged()) {
-    DuplicateRecordings.Clear();
-    for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {
-      DuplicateRecordings.Add(new cDuplicateRecording(*duplicate));
-    }
-    duplicateRecordingsStateKey.Remove();
-  } else
-    duplicateRecordingsStateKey.Remove(false);
+  DuplicateRecordings.Clear();
+  for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {
+    DuplicateRecordings.Add(new cDuplicateRecording(*duplicate));
+  }
+  duplicateRecordingsStateKey.Remove();
   gettimeofday(&stopTime, NULL);
   double seconds = (((long long)stopTime.tv_sec * 1000000 + stopTime.tv_usec) - ((long long)startTime.tv_sec * 1000000 + startTime.tv_usec)) / 1000000.0;
   dsyslog("duplicates: Scanning of duplicates took %.2f seconds.", seconds);
@@ -191,6 +190,7 @@ bool cDuplicateRecordingScannerThread::RecordingsStateChanged(void) {
     recordingsStateKey.Reset();
     recordingsStateKey.Remove();
     dsyslog("duplicates: Recordings state changed while scanning.");
+    cCondWait::SleepMs(500);
     return true;
   }
   return false;
