@@ -181,14 +181,14 @@ void cDuplicateRecordingScannerThread::Scan(void) {
         }
       }
       if (duplicate->Duplicates()->Count() > 1) {
-        duplicate->SetText(cString::sprintf(tr("%d duplicate recordings"), duplicate->Duplicates()->Count()));
+        duplicate->SetText(std::string(cString::sprintf(tr("%d duplicate recordings"), duplicate->Duplicates()->Count())));
         duplicates.Add(duplicate);
       } else
         delete duplicate;
     }
   }
   if (descriptionless->Duplicates()->Count() > 0) {
-    descriptionless->SetText(cString::sprintf(tr("%d recordings without description"), descriptionless->Duplicates()->Count()));
+    descriptionless->SetText(std::string(cString::sprintf(tr("%d recordings without description"), descriptionless->Duplicates()->Count())));
     duplicates.Add(descriptionless);
   } else
     delete descriptionless;

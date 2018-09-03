@@ -35,8 +35,8 @@ public:
   bool Checked() { return checked; }
   cVisibility Visibility() { return visibility; }
   std::string FileName(void) { return fileName; }
-  void SetText(const char *t) { text = std::string(t); }
-  const char *Text(void) { return text.c_str(); }
+  void SetText(std::string t) { text = t; }
+  std::string Text(void) { return text; }
   cList<cDuplicateRecording> *Duplicates(void) { return duplicates; }
 };
 

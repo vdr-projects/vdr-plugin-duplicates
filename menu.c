@@ -108,7 +108,7 @@ public:
 
 cMenuDuplicateItem::cMenuDuplicateItem(cDuplicateRecording *DuplicateRecording) : visibility(DuplicateRecording->Visibility()) {
   fileName = DuplicateRecording->FileName();
-  SetText(DuplicateRecording->Text());
+  SetText(DuplicateRecording->Text().c_str());
 }
 
 // --- cMenuDuplicates -------------------------------------------------------
@@ -157,7 +157,7 @@ void cMenuDuplicates::Set(bool Refresh) {
       CurrentRecording = cReplayControl::LastReplayed();
     Clear();
     for (cDuplicateRecording *Duplicates = DuplicateRecordings.First(); Duplicates; Duplicates = DuplicateRecordings.Next(Duplicates)) {
-      Add(SeparatorItem(Duplicates->Text()));
+      Add(SeparatorItem(Duplicates->Text().c_str()));
       for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
         cMenuDuplicateItem *Item = new cMenuDuplicateItem(Duplicate);
         Add(Item);
