@@ -420,14 +420,11 @@ eOSState cMenuDuplicates::ToggleHidden(void) {
     bool hidden = ri->Visibility().Read() == HIDDEN;
     if (Interface->Confirm(hidden ? tr("Unhide recording?") : tr("Hide recording?"))) {
       if (ri->Visibility().Write(hidden)) {
-        if (dc.hidden) {
-          ri->Visibility().Set(!hidden);
-          SetHelpKeys();
-        } else {
+        if (!dc.hidden) {
           Del(Current());
-          SetHelpKeys();
           Display();
         }
+        SetHelpKeys();
       } else
         Skins.Message(mtError, tr("Error while setting visibility!"));
     }
