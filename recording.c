@@ -90,6 +90,24 @@ bool cDuplicateRecording::IsDuplicate(cDuplicateRecording *DuplicateRecording) {
 
 cDuplicateRecordings::cDuplicateRecordings(void) : cList("duplicates") {}
 
+bool cDuplicateRecordings::RemoveDeleted(void) {
+  LOCK_RECORDINGS_READ
+  int removed = 0;
+  for (cDuplicateRecording *duplicates = First(); duplicates; duplicates = Next(duplicates)) {
+    for (cDuplicateRecording *duplicate = duplicates->Duplicates()->First(); duplicate; duplicate = duplicates->Duplicates()->Next(duplicate)) {
+      const cRecording *recording = Recordings->GetByName(duplicate->FileName().c_str());
+      if (!recording || !dc.hidden && duplicate->Visibility().Read() == HIDDEN) {
+        duplicates->Duplicates()->Del(duplicate);
+        removed++;
+      }
+    }
+    if (duplicates->Duplicates()->Count() < 2)
+      Del(duplicates);
+  }
+  dsyslog("duplicates: Removed %d deleted recordings.", removed);
+  return removed > 0;
+}
+
 cDuplicateRecordings DuplicateRecordings;
 
 // --- cDuplicateRecordingScannerThread ------------------------------------------
@@ -127,6 +145,9 @@ void cDuplicateRecordingScannerThread::Scan(void) {
   dsyslog("duplicates: Scanning of duplicates started.");
   struct timeval startTime, stopTime;
   gettimeofday(&startTime, NULL);
+  cStateKey duplicateRecordingsStateKey;
+  DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
+  duplicateRecordingsStateKey.Remove(DuplicateRecordings.RemoveDeleted());
   cDuplicateRecording *descriptionless = new cDuplicateRecording();
   cList<cDuplicateRecording> recordings;
   cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
@@ -173,7 +194,6 @@ void cDuplicateRecordingScannerThread::Scan(void) {
     delete descriptionless;
   if (RecordingsStateChanged())
     return;
-  cStateKey duplicateRecordingsStateKey;
   DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
   DuplicateRecordings.Clear();
   for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {

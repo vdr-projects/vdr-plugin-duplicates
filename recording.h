@@ -45,6 +45,7 @@ public:
 class cDuplicateRecordings : public cList<cDuplicateRecording> {
 public:
   cDuplicateRecordings(void);
+  bool RemoveDeleted(void);
 };
 
 extern cDuplicateRecordings DuplicateRecordings;

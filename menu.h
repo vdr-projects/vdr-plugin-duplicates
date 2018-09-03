@@ -30,7 +30,6 @@ private:
   void SetHelpKeys(void);
   void Set(bool Refresh = false);
   void SetCurrentIndex(int index);
-  void Del(int index);
   eOSState Play(void);
   eOSState Setup(void);
   eOSState Delete(void);

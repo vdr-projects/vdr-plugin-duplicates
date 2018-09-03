@@ -247,24 +247,6 @@ void cMenuDuplicates::SetCurrentIndex(int index) {
   }
 }
 
-void cMenuDuplicates::Del(int index) {
-  cOsdMenu::Del(index);
-  // remove items that have less than 2 duplicates
-  int d = 0;
-  for (int i = Count() - 1; i >= 0; i--) {
-    if (!SelectableItem(i)) {
-      if (d < 2) {
-        for (int j = 0; j <= d; j++) {
-          cOsdMenu::Del(i);
-        }
-      }
-      d = 0;
-    } else
-      d++;
-  }
-  SetCurrentIndex(index);
-}
-
 eOSState cMenuDuplicates::Delete(void) {
   if (HasSubMenu() || Count() == 0)
     return osContinue;
@@ -297,9 +279,11 @@ eOSState cMenuDuplicates::Delete(void) {
         cVideoDiskUsage::ForceCheck();
         Recordings->SetModified();
         recordingsStateKey.Remove();
-        Del(Current());
+        cStateKey stateKey;
+        DuplicateRecordings.Lock(stateKey, true);
+        stateKey.Remove(DuplicateRecordings.RemoveDeleted());
+        Set(true);
         SetHelpKeys();
-        Display();
       } else {
         recordingsStateKey.Remove();
         Skins.Message(mtError, trVDR("Error while deleting recording!"));
@@ -355,14 +339,13 @@ eOSState cMenuDuplicates::ToggleHidden(void) {
     bool hidden = ri->Visibility().Read() == HIDDEN;
     if (Interface->Confirm(hidden ? tr("Unhide recording?") : tr("Hide recording?"))) {
       if (ri->Visibility().Write(hidden)) {
-        if (dc.hidden) {
-          ri->Visibility().Set(!hidden);
-          SetHelpKeys();
-        } else {
-          Del(Current());
-          SetHelpKeys();
-          Display();
+        if (!dc.hidden) {
+          cStateKey stateKey;
+          DuplicateRecordings.Lock(stateKey, true);
+          stateKey.Remove(DuplicateRecordings.RemoveDeleted());
+          Set(true);
         }
+        SetHelpKeys();
       } else
         Skins.Message(mtError, tr("Error while setting visibility!"));
     }
