@@ -60,18 +60,17 @@ cMenuDuplicate::cMenuDuplicate(const cRecording *Recording)
   SetHelp(trVDR("Button$Play"));
 }
 
-bool cMenuDuplicate::RefreshRecording(void)
-{
+bool cMenuDuplicate::RefreshRecording(void) {
   if (const cRecordings *Recordings = cRecordings::GetRecordingsRead(recordingsStateKey)) {
-     if ((recording = Recordings->GetByName(originalFileName)) != NULL)
-        Display();
-     else {
-        recordingsStateKey.Remove();
-        Skins.Message(mtWarning, trVDR("Recording vanished!"));
-        return false;
-        }
-     recordingsStateKey.Remove();
-     }
+    if ((recording = Recordings->GetByName(originalFileName)) != NULL) {
+      recordingsStateKey.Remove();
+      Display();
+    } else {
+      recordingsStateKey.Remove();
+      Skins.Message(mtWarning, trVDR("Recording vanished!"));
+      return false;
+    }
+  }
   return true;
 }
 
