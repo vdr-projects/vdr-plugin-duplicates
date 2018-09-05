@@ -255,18 +255,13 @@ eOSState cMenuDuplicates::Delete(void) {
     if (Interface->Confirm(trVDR("Delete recording?"))) {
       if (TimerStillRecording(FileName))
         return osContinue;
-      {
-        LOCK_RECORDINGS_READ
-        if (const cRecording *Recording = Recordings->GetByName(FileName)) {
-          FileName = Recording->FileName();
-          if (RecordingsHandler.GetUsage(FileName)) {
-            if (!Interface->Confirm(trVDR("Recording is being edited - really delete?")))
-              return osContinue;
-          }
-        }
+      if (RecordingsHandler.GetUsage(FileName)) {
+        if (Interface->Confirm(trVDR("Recording is being edited - really delete?"))) {
+          RecordingsHandler.Del(FileName);
+        } else
+          return osContinue;
       }
       dsyslog("duplicates: Deleting recording %s.", FileName);
-      RecordingsHandler.Del(FileName); // must do this w/o holding a lock, because the cleanup section in cDirCopier::Action() might request one!
       if (cReplayControl::NowReplaying() && strcmp(cReplayControl::NowReplaying(), FileName) == 0)
          cControl::Shutdown();
       cStateKey recordingsStateKey;
@@ -298,14 +293,17 @@ eOSState cMenuDuplicates::Play(void) {
     return osContinue;
   cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current());
   if (ri) {
-    LOCK_RECORDINGS_READ;
+    cStateKey stateKey;
+    const cRecordings *Recordings = cRecordings::GetRecordingsRead(stateKey);
     const cRecording *recording = Recordings->GetByName(ri->FileName());
     if (recording) {
       cDuplicatesReplayControl::SetRecording(recording->FileName());
+      stateKey.Remove();
       cControl::Shutdown();
       cControl::Launch(new cDuplicatesReplayControl);
       return osEnd;
-    }
+    } else
+      stateKey.Remove();
   }
   return osContinue;
 }
@@ -323,10 +321,14 @@ eOSState cMenuDuplicates::Info(void) {
     return osContinue;
   cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current());
   if (ri) {
-    LOCK_RECORDINGS_READ;
+    cStateKey stateKey;
+    const cRecordings *Recordings = cRecordings::GetRecordingsRead(stateKey);
     const cRecording *recording = Recordings->GetByName(ri->FileName());
-    if (recording && recording->Info()->Title())
+    if (recording && recording->Info()->Title()) {
+      stateKey.Remove();
       return AddSubMenu(new cMenuDuplicate(recording));
+    } else
+      stateKey.Remove();
   }
   return osContinue;
 }
