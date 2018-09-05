@@ -45,6 +45,11 @@ eOSState cDuplicatesReplayControl::ProcessKey(eKeys Key) {
 class cMenuDuplicate : public cOsdMenu {
 private:
   const cRecording *recording;
+#if VDRVERSNUM >= 20301
+  cString originalFileName;
+  cStateKey recordingsStateKey;
+  bool RefreshRecording(void);
+#endif
 public:
   cMenuDuplicate(const cRecording *Recording);
   virtual void Display(void);
@@ -57,8 +62,28 @@ cMenuDuplicate::cMenuDuplicate(const cRecording *Recording)
   SetMenuCategory(mcRecording);
 #endif
   recording = Recording;
+#if VDRVERSNUM >= 20301
+  originalFileName = recording->FileName();
+#endif
   SetHelp(trVDR("Button$Play"));
 }
+
+#if VDRVERSNUM >= 20301
+bool cMenuDuplicate::RefreshRecording(void)
+{
+  if (const cRecordings *Recordings = cRecordings::GetRecordingsRead(recordingsStateKey)) {
+     if ((recording = Recordings->GetByName(originalFileName)) != NULL)
+        Display();
+     else {
+        recordingsStateKey.Remove();
+        Skins.Message(mtWarning, trVDR("Recording vanished!"));
+        return false;
+        }
+     recordingsStateKey.Remove();
+     }
+  return true;
+}
+#endif
 
 void cMenuDuplicate::Display(void) {
   cOsdMenu::Display();
@@ -67,8 +92,11 @@ void cMenuDuplicate::Display(void) {
      cStatus::MsgOsdTextItem(recording->Info()->Description());
 }
 
-eOSState cMenuDuplicate::ProcessKey(eKeys Key)
-{
+eOSState cMenuDuplicate::ProcessKey(eKeys Key) {
+#if VDRVERSNUM >= 20301
+  if (!RefreshRecording())
+    return osBack; // the recording has vanished, so close this menu
+#endif
   switch (int(Key)) {
     case kUp|k_Repeat:
     case kUp:
@@ -401,10 +429,11 @@ eOSState cMenuDuplicates::Info(void) {
     cRecording *recording = Recordings.GetByName(ri->FileName());
 #endif
     if (recording && recording->Info()->Title()) {
+      cMenuDuplicate *MenuDuplicate = new cMenuDuplicate(recording);
 #if VDRVERSNUM >= 20301
       stateKey.Remove();
 #endif
-      return AddSubMenu(new cMenuDuplicate(recording));
+      return AddSubMenu(MenuDuplicate);
     } 
 #if VDRVERSNUM >= 20301
     else
