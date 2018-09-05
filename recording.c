@@ -91,10 +91,11 @@ bool cDuplicateRecording::IsDuplicate(cDuplicateRecording *DuplicateRecording) {
 cDuplicateRecordings::cDuplicateRecordings(void) : cList("duplicates") {}
 
 bool cDuplicateRecordings::RemoveDeleted(void) {
-  LOCK_RECORDINGS_READ
+  dsyslog("duplicates: Removing deleted recordings.");
   int removed = 0;
   for (cDuplicateRecording *duplicates = First(); duplicates; duplicates = Next(duplicates)) {
     for (cDuplicateRecording *duplicate = duplicates->Duplicates()->First(); duplicate; duplicate = duplicates->Duplicates()->Next(duplicate)) {
+      LOCK_RECORDINGS_READ
       const cRecording *recording = Recordings->GetByName(duplicate->FileName().c_str());
       if (!recording || !dc.hidden && duplicate->Visibility().Read() == HIDDEN) {
         duplicates->Duplicates()->Del(duplicate);
@@ -142,7 +143,7 @@ void cDuplicateRecordingScannerThread::Action(void) {
 }
 
 void cDuplicateRecordingScannerThread::Scan(void) {
-  dsyslog("duplicates: Scanning of duplicates started.");
+  dsyslog("duplicates: Scanning of duplicate recordings started.");
   struct timeval startTime, stopTime;
   gettimeofday(&startTime, NULL);
   cStateKey duplicateRecordingsStateKey;
@@ -202,7 +203,7 @@ void cDuplicateRecordingScannerThread::Scan(void) {
   duplicateRecordingsStateKey.Remove();
   gettimeofday(&stopTime, NULL);
   double seconds = (((long long)stopTime.tv_sec * 1000000 + stopTime.tv_usec) - ((long long)startTime.tv_sec * 1000000 + startTime.tv_usec)) / 1000000.0;
-  dsyslog("duplicates: Scanning of duplicates took %.2f seconds.", seconds);
+  dsyslog("duplicates: Scanning of duplicate recordings took %.2f seconds.", seconds);
 }
 
 bool cDuplicateRecordingScannerThread::RecordingsStateChanged(void) {
