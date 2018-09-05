@@ -303,20 +303,6 @@ eOSState cMenuDuplicates::Delete(void) {
     if (Interface->Confirm(trVDR("Delete recording?"))) {
       if (TimerStillRecording(ri->FileName()))
         return osContinue;
-#if VDRVERSNUM >= 20301
-      cString FileName;
-      {
-        LOCK_RECORDINGS_READ
-        if (const cRecording *Recording = Recordings->GetByName(ri->FileName())) {
-          FileName = Recording->FileName();
-          if (RecordingsHandler.GetUsage(FileName)) {
-            if (!Interface->Confirm(trVDR("Recording is being edited - really delete?")))
-              return osContinue;
-          }
-        }
-      }
-      RecordingsHandler.Del(FileName); // must do this w/o holding a lock, because the cleanup section in cDirCopier::Action() might request one!
-#else
       cString FileName = ri->FileName();
       if (RecordingsHandler.GetUsage(FileName)) {
         if (Interface->Confirm(trVDR("Recording is being edited - really delete?"))) {
@@ -324,7 +310,6 @@ eOSState cMenuDuplicates::Delete(void) {
         } else
           return osContinue;
       }
-#endif
       if (cReplayControl::NowReplaying() && strcmp(cReplayControl::NowReplaying(), FileName) == 0)
          cControl::Shutdown();
 #if VDRVERSNUM >= 20301
@@ -368,7 +353,8 @@ eOSState cMenuDuplicates::Play(void) {
   cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current());
   if (ri) {
 #if VDRVERSNUM >= 20301
-    LOCK_RECORDINGS_READ;
+    cStateKey stateKey;
+    const cRecordings *Recordings = cRecordings::GetRecordingsRead(stateKey);
     const cRecording *recording = Recordings->GetByName(ri->FileName());
 #else
     cRecording *recording = Recordings.GetByName(ri->FileName());
@@ -379,10 +365,17 @@ eOSState cMenuDuplicates::Play(void) {
 #else
       cDuplicatesReplayControl::SetRecording(recording->FileName(), recording->Title());
 #endif
+#if VDRVERSNUM >= 20301
+      stateKey.Remove();
+#endif
       cControl::Shutdown();
       cControl::Launch(new cDuplicatesReplayControl);
       return osEnd;
     }
+#if VDRVERSNUM >= 20301
+    else
+      stateKey.Remove();
+#endif
   }
   return osContinue;
 }
@@ -401,13 +394,22 @@ eOSState cMenuDuplicates::Info(void) {
   cMenuDuplicateItem *ri = (cMenuDuplicateItem *)Get(Current());
   if (ri) {
 #if VDRVERSNUM >= 20301
-    LOCK_RECORDINGS_READ;
+    cStateKey stateKey;
+    const cRecordings *Recordings = cRecordings::GetRecordingsRead(stateKey);
     const cRecording *recording = Recordings->GetByName(ri->FileName());
 #else
     cRecording *recording = Recordings.GetByName(ri->FileName());
 #endif
-    if (recording && recording->Info()->Title())
+    if (recording && recording->Info()->Title()) {
+#if VDRVERSNUM >= 20301
+      stateKey.Remove();
+#endif
       return AddSubMenu(new cMenuDuplicate(recording));
+    } 
+#if VDRVERSNUM >= 20301
+    else
+      stateKey.Remove();
+#endif
   }
   return osContinue;
 }
