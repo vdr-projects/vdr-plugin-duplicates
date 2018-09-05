@@ -12,6 +12,7 @@ VDR Plugin 'duplicates' Revision History
 - Added missing recordings lock release.
 - Simplified toggle hidden.
 - Fixed recordings locking sequence.
+- Check for vanished recorgins in info menu.
 
 2018-08-30: Version 0.2.1
 

@@ -43,6 +43,9 @@ eOSState cDuplicatesReplayControl::ProcessKey(eKeys Key) {
 class cMenuDuplicate : public cOsdMenu {
 private:
   const cRecording *recording;
+  cString originalFileName;
+  cStateKey recordingsStateKey;
+  bool RefreshRecording(void);
 public:
   cMenuDuplicate(const cRecording *Recording);
   virtual void Display(void);
@@ -53,7 +56,23 @@ cMenuDuplicate::cMenuDuplicate(const cRecording *Recording)
 :cOsdMenu(trVDR("Recording info")) {
   SetMenuCategory(mcRecording);
   recording = Recording;
+  originalFileName = recording->FileName();
   SetHelp(trVDR("Button$Play"));
+}
+
+bool cMenuDuplicate::RefreshRecording(void)
+{
+  if (const cRecordings *Recordings = cRecordings::GetRecordingsRead(recordingsStateKey)) {
+     if ((recording = Recordings->GetByName(originalFileName)) != NULL)
+        Display();
+     else {
+        recordingsStateKey.Remove();
+        Skins.Message(mtWarning, trVDR("Recording vanished!"));
+        return false;
+        }
+     recordingsStateKey.Remove();
+     }
+  return true;
 }
 
 void cMenuDuplicate::Display(void) {
@@ -63,8 +82,9 @@ void cMenuDuplicate::Display(void) {
      cStatus::MsgOsdTextItem(recording->Info()->Description());
 }
 
-eOSState cMenuDuplicate::ProcessKey(eKeys Key)
-{
+eOSState cMenuDuplicate::ProcessKey(eKeys Key) {
+  if (!RefreshRecording())
+    return osBack; // the recording has vanished, so close this menu
   switch (int(Key)) {
     case kUp|k_Repeat:
     case kUp:
@@ -325,8 +345,9 @@ eOSState cMenuDuplicates::Info(void) {
     const cRecordings *Recordings = cRecordings::GetRecordingsRead(stateKey);
     const cRecording *recording = Recordings->GetByName(ri->FileName());
     if (recording && recording->Info()->Title()) {
+      cMenuDuplicate *MenuDuplicate = new cMenuDuplicate(recording);
       stateKey.Remove();
-      return AddSubMenu(new cMenuDuplicate(recording));
+      return AddSubMenu(MenuDuplicate);
     } else
       stateKey.Remove();
   }
