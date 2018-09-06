@@ -197,12 +197,16 @@ void cMenuDuplicates::Set(bool Refresh) {
   Clear();
   cMutexLock MutexLock(&DuplicateRecordings.mutex);
   for (cDuplicateRecording *Duplicates = DuplicateRecordings.First(); Duplicates; Duplicates = DuplicateRecordings.Next(Duplicates)) {
-    Add(SeparatorItem(Duplicates->Text()));
-    for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
-      cMenuDuplicateItem *Item = new cMenuDuplicateItem(Duplicate);
-      Add(Item);
-      if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
-        SetCurrent(Item);
+    if (Duplicates) {
+     Add(SeparatorItem(Duplicates->Text()));
+     for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
+      if (Duplicate) {
+        cMenuDuplicateItem *Item = new cMenuDuplicateItem(Duplicate);
+        Add(Item);
+        if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
+          SetCurrent(Item);
+       }
+      }
     }
   }
   if (Count() == 0)

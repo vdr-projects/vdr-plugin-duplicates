@@ -60,7 +60,8 @@ cDuplicateRecording::cDuplicateRecording(const cDuplicateRecording &DuplicateRec
   if (DuplicateRecording.duplicates != NULL) {
     duplicates = new cList<cDuplicateRecording>;
     for (const cDuplicateRecording *duplicate = DuplicateRecording.duplicates->First(); duplicate; duplicate = DuplicateRecording.duplicates->Next(duplicate)) {
-      duplicates->Add(new cDuplicateRecording(*duplicate));
+      if (duplicate)
+        duplicates->Add(new cDuplicateRecording(*duplicate));
     }
   } else
     duplicates = NULL;
@@ -116,23 +117,25 @@ void cDuplicateRecordings::Update(void) {
     Recordings.Sort();
     for (cRecording *recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
 #endif
-      cDuplicateRecording *Item = new cDuplicateRecording(recording);
-      if (Item->HasDescription())
-        recordings.Add(Item);
-      else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
-        descriptionless->Duplicates()->Add(Item);
+      if (recording) {
+        cDuplicateRecording *Item = new cDuplicateRecording(recording);
+        if (Item->HasDescription())
+          recordings.Add(Item);
+        else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
+          descriptionless->Duplicates()->Add(Item);
+      }
     }
 #if VDRVERSNUM >= 20301
     recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
 #endif
   }
   for (cDuplicateRecording *recording = recordings.First(); recording; recording = recordings.Next(recording)) {
-    if (!recording->Checked()) {
+    if (recording && !recording->Checked()) {
       recording->SetChecked();
       cDuplicateRecording *duplicates = new cDuplicateRecording();
       duplicates->Duplicates()->Add(new cDuplicateRecording(*recording));
       for (cDuplicateRecording *compare = recordings.First(); compare; compare = recordings.Next(compare)) {
-        if (!compare->Checked()) {
+        if (compare && !compare->Checked()) {
 #ifdef DEBUG_VISIBILITY
           isDuplicateCount++;
 #endif
