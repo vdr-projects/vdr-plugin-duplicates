@@ -53,7 +53,7 @@ cDuplicateRecording::cDuplicateRecording(const cDuplicateRecording &DuplicateRec
   text(DuplicateRecording.text),
   title(DuplicateRecording.title),
   description(DuplicateRecording.description) {
-  if (DuplicateRecording.duplicates != NULL) {
+  if (DuplicateRecording.duplicates != NULL && DuplicateRecording.duplicates->Count() > 0) {
     duplicates = new cList<cDuplicateRecording>;
     for (const cDuplicateRecording *duplicate = DuplicateRecording.duplicates->First(); duplicate; duplicate = DuplicateRecording.duplicates->Next(duplicate)) {
       if (duplicate)
@@ -91,27 +91,35 @@ bool cDuplicateRecording::IsDuplicate(cDuplicateRecording *DuplicateRecording) {
 
 cDuplicateRecordings::cDuplicateRecordings(void) : cList("duplicates") {}
 
-bool cDuplicateRecordings::RemoveDeleted(void) {
-  dsyslog("duplicates: Removing deleted recordings.");
-  int removed = 0;
-  for (cDuplicateRecording *duplicates = First(); duplicates; duplicates = Next(duplicates)) {
-    if (duplicates) {
-      for (cDuplicateRecording *duplicate = duplicates->Duplicates()->First(); duplicate; duplicate = duplicates->Duplicates()->Next(duplicate)) {
-        if (duplicate) {
+void cDuplicateRecordings::RemoveDeleted(void) {
+  dsyslog("duplicates: Checking %d duplicate recordings while removing deleted recordings.", Count());
+  cStateKey duplicateRecordingsStateKey;
+  Lock(duplicateRecordingsStateKey, true);
+  int rr = 0, rd = 0;
+  for (cDuplicateRecording *dr = First(); dr;) {
+    if (dr && dr->Duplicates()) {
+      cDuplicateRecording *duplicateRecording = dr;
+      dr = Next(dr);
+      for (cDuplicateRecording *d = duplicateRecording->Duplicates()->First(); d;) {
+        if (d) {
+          cDuplicateRecording *duplicate = d;
+          d = duplicateRecording->Duplicates()->Next(d);
           LOCK_RECORDINGS_READ
           const cRecording *recording = Recordings->GetByName(duplicate->FileName().c_str());
           if (!recording || !dc.hidden && duplicate->Visibility().Read() == HIDDEN) {
-            duplicates->Duplicates()->Del(duplicate);
-            removed++;
+            duplicateRecording->Duplicates()->Del(duplicate);
+            rr++;
           }
         }
       }
-      if (duplicates->Duplicates()->Count() < 2)
-        Del(duplicates);
+      if (duplicateRecording->Duplicates()->Count() < 2) {
+        Del(duplicateRecording);
+        rd++;
+      }
     }
   }
-  dsyslog("duplicates: Removed %d deleted recordings.", removed);
-  return removed > 0;
+  duplicateRecordingsStateKey.Remove(rr > 0);
+  dsyslog("duplicates: Removed %d deleted recordings and %d duplicate recordings.", rr, rd);
 }
 
 cDuplicateRecordings DuplicateRecordings;
@@ -151,9 +159,7 @@ void cDuplicateRecordingScannerThread::Scan(void) {
   dsyslog("duplicates: Scanning of duplicate recordings started.");
   struct timeval startTime, stopTime;
   gettimeofday(&startTime, NULL);
-  cStateKey duplicateRecordingsStateKey;
-  DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
-  duplicateRecordingsStateKey.Remove(DuplicateRecordings.RemoveDeleted());
+  DuplicateRecordings.RemoveDeleted();
   cDuplicateRecording *descriptionless = new cDuplicateRecording();
   cList<cDuplicateRecording> recordings;
   cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
@@ -202,6 +208,7 @@ void cDuplicateRecordingScannerThread::Scan(void) {
     delete descriptionless;
   if (RecordingsStateChanged())
     return;
+  cStateKey duplicateRecordingsStateKey;
   DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
   DuplicateRecordings.Clear();
   for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {
