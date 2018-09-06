@@ -56,8 +56,7 @@ cDuplicateRecording::cDuplicateRecording(const cDuplicateRecording &DuplicateRec
   if (DuplicateRecording.duplicates != NULL && DuplicateRecording.duplicates->Count() > 0) {
     duplicates = new cList<cDuplicateRecording>;
     for (const cDuplicateRecording *duplicate = DuplicateRecording.duplicates->First(); duplicate; duplicate = DuplicateRecording.duplicates->Next(duplicate)) {
-      if (duplicate)
-        duplicates->Add(new cDuplicateRecording(*duplicate));
+      duplicates->Add(new cDuplicateRecording(*duplicate));
     }
   } else
     duplicates = NULL;
@@ -97,19 +96,17 @@ void cDuplicateRecordings::RemoveDeleted(void) {
   Lock(duplicateRecordingsStateKey, true);
   int rr = 0, rd = 0;
   for (cDuplicateRecording *dr = First(); dr;) {
-    if (dr && dr->Duplicates()) {
+    if (dr->Duplicates()) {
       cDuplicateRecording *duplicateRecording = dr;
       dr = Next(dr);
       for (cDuplicateRecording *d = duplicateRecording->Duplicates()->First(); d;) {
-        if (d) {
-          cDuplicateRecording *duplicate = d;
-          d = duplicateRecording->Duplicates()->Next(d);
-          LOCK_RECORDINGS_READ
-          const cRecording *recording = Recordings->GetByName(duplicate->FileName().c_str());
-          if (!recording || !dc.hidden && duplicate->Visibility().Read() == HIDDEN) {
-            duplicateRecording->Duplicates()->Del(duplicate);
-            rr++;
-          }
+        cDuplicateRecording *duplicate = d;
+        d = duplicateRecording->Duplicates()->Next(d);
+        LOCK_RECORDINGS_READ
+        const cRecording *recording = Recordings->GetByName(duplicate->FileName().c_str());
+        if (!recording || !dc.hidden && duplicate->Visibility().Read() == HIDDEN) {
+          duplicateRecording->Duplicates()->Del(duplicate);
+          rr++;
         }
       }
       if (duplicateRecording->Duplicates()->Count() < 2) {
@@ -165,13 +162,11 @@ void cDuplicateRecordingScannerThread::Scan(void) {
   cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
   Recordings->Sort();
   for (const cRecording *recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
-    if (recording) {
-      cDuplicateRecording *Item = new cDuplicateRecording(recording);
-      if (Item->HasDescription())
-        recordings.Add(Item);
-      else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
-        descriptionless->Duplicates()->Add(Item);
-    }
+    cDuplicateRecording *Item = new cDuplicateRecording(recording);
+    if (Item->HasDescription())
+      recordings.Add(Item);
+    else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
+      descriptionless->Duplicates()->Add(Item);
   }
   recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
   cList<cDuplicateRecording> duplicates;
@@ -182,12 +177,12 @@ void cDuplicateRecordingScannerThread::Scan(void) {
     }
     if (cIoThrottle::Engaged())
       cCondWait::SleepMs(100);
-    if (recording &&!recording->Checked()) {
+    if (!recording->Checked()) {
       recording->SetChecked();
       cDuplicateRecording *duplicate = new cDuplicateRecording();
       duplicate->Duplicates()->Add(new cDuplicateRecording(*recording));
       for (cDuplicateRecording *compare = recordings.First(); compare; compare = recordings.Next(compare)) {
-        if (compare && !compare->Checked()) {
+        if (!compare->Checked()) {
           if (recording->IsDuplicate(compare)) {
             duplicate->Duplicates()->Add(new cDuplicateRecording(*compare));
             compare->SetChecked();
@@ -212,8 +207,7 @@ void cDuplicateRecordingScannerThread::Scan(void) {
   DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
   DuplicateRecordings.Clear();
   for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {
-    if (duplicate)
-      DuplicateRecordings.Add(new cDuplicateRecording(*duplicate));
+    DuplicateRecordings.Add(new cDuplicateRecording(*duplicate));
   }
   duplicateRecordingsStateKey.Remove();
   gettimeofday(&stopTime, NULL);
