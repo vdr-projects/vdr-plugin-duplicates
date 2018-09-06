@@ -176,12 +176,16 @@ void cMenuDuplicates::Set(bool Refresh) {
       CurrentRecording = cReplayControl::LastReplayed();
     Clear();
     for (cDuplicateRecording *Duplicates = DuplicateRecordings.First(); Duplicates; Duplicates = DuplicateRecordings.Next(Duplicates)) {
-      Add(SeparatorItem(Duplicates->Text().c_str()));
-      for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
-        cMenuDuplicateItem *Item = new cMenuDuplicateItem(Duplicate);
-        Add(Item);
-        if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
-          SetCurrent(Item);
+      if (Duplicates) {
+        Add(SeparatorItem(Duplicates->Text().c_str()));
+        for (cDuplicateRecording *Duplicate = Duplicates->Duplicates()->First(); Duplicate; Duplicate = Duplicates->Duplicates()->Next(Duplicate)) {
+          if (Duplicate) {
+            cMenuDuplicateItem *Item = new cMenuDuplicateItem(Duplicate);
+            Add(Item);
+            if (CurrentRecording && strcmp(CurrentRecording, Item->FileName()) == 0)
+              SetCurrent(Item);
+          }
+        }
       }
     }
     duplicateRecordingsStateKey.Remove();
@@ -189,7 +193,7 @@ void cMenuDuplicates::Set(bool Refresh) {
       Add(SeparatorItem(cString::sprintf(tr("%d duplicate recordings"), 0)));
     if (Refresh) {
       SetCurrentIndex(currentIndex);
-      Display();
+      Display();    
     }
   }
 }
