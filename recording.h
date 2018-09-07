@@ -45,7 +45,7 @@ public:
 class cDuplicateRecordings : public cList<cDuplicateRecording> {
 public:
   cDuplicateRecordings(void);
-  void RemoveDeleted(void);
+  void Remove(std::string fileName);
 };
 
 extern cDuplicateRecordings DuplicateRecordings;

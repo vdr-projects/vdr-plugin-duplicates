@@ -293,7 +293,7 @@ eOSState cMenuDuplicates::Delete(void) {
         cVideoDiskUsage::ForceCheck();
         Recordings->SetModified();
         recordingsStateKey.Remove();
-        DuplicateRecordings.RemoveDeleted();
+        DuplicateRecordings.Remove(std::string(FileName));
         Set(true);
         SetHelpKeys();
       } else {
@@ -360,7 +360,7 @@ eOSState cMenuDuplicates::ToggleHidden(void) {
     if (Interface->Confirm(hidden ? tr("Unhide recording?") : tr("Hide recording?"))) {
       if (ri->Visibility().Write(hidden)) {
         if (!dc.hidden) {
-          DuplicateRecordings.RemoveDeleted();
+          DuplicateRecordings.Remove(std::string(ri->FileName()));
           Set(true);
         }
         SetHelpKeys();
