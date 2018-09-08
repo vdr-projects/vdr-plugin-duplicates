@@ -20,11 +20,7 @@ cDuplicateRecording::cDuplicateRecording(void) : visibility(NULL) {
 cDuplicateRecording::cDuplicateRecording(const cRecording *Recording) : visibility(Recording->FileName()) {
   checked = false;
   fileName = std::string(Recording->FileName());
-#if defined LIEMIKUUTIO && LIEMIKUUTIO < 131
-  text = std::string(Recording->Title('\t', true, -1, false));
-#else
   text = std::string(Recording->Title('\t', true));
-#endif
   if (dc.title && Recording->Info()->Title())
      title = std::string(Recording->Info()->Title());
   else
@@ -57,11 +53,10 @@ cDuplicateRecording::cDuplicateRecording(const cDuplicateRecording &DuplicateRec
   text(DuplicateRecording.text),
   title(DuplicateRecording.title),
   description(DuplicateRecording.description) {
-  if (DuplicateRecording.duplicates != NULL) {
+  if (DuplicateRecording.duplicates != NULL && DuplicateRecording.duplicates->Count() > 0) {
     duplicates = new cList<cDuplicateRecording>;
     for (const cDuplicateRecording *duplicate = DuplicateRecording.duplicates->First(); duplicate; duplicate = DuplicateRecording.duplicates->Next(duplicate)) {
-      if (duplicate)
-        duplicates->Add(new cDuplicateRecording(*duplicate));
+      duplicates->Add(new cDuplicateRecording(*duplicate));
     }
   } else
     duplicates = NULL;
@@ -93,79 +88,145 @@ bool cDuplicateRecording::IsDuplicate(cDuplicateRecording *DuplicateRecording) {
 
 // --- cDuplicateRecordings ------------------------------------------------------
 
-cDuplicateRecordings::cDuplicateRecordings(void) {}
+cDuplicateRecordings::cDuplicateRecordings(void) : cList("duplicates") {}
 
-void cDuplicateRecordings::Update(void) {
+void cDuplicateRecordings::Remove(std::string fileName) {
+  cStateKey duplicateRecordingsStateKey;
+  Lock(duplicateRecordingsStateKey, true);
+  int rr = 0, rd = 0;
+  for (cDuplicateRecording *dr = First(); dr;) {
+    cDuplicateRecording *duplicateRecording = dr;
+    dr = Next(dr);
+    if (duplicateRecording->Duplicates()) {
+      for (cDuplicateRecording *d = duplicateRecording->Duplicates()->First(); d;) {
+        cDuplicateRecording *duplicate = d;
+        d = duplicateRecording->Duplicates()->Next(d);
+        if (duplicate->FileName() == fileName) {
+          duplicateRecording->Duplicates()->Del(duplicate);
+          rr++;
+        }
+      }
+      if (duplicateRecording->Duplicates()->Count() < 2) {
+        Del(duplicateRecording);
+        rd++;
+      } else if (duplicateRecording->HasDescription()) {
+        duplicateRecording->SetText(std::string(cString::sprintf(tr("%d duplicate recordings"), duplicateRecording->Duplicates()->Count())));
+      } else
+        duplicateRecording->SetText(std::string(cString::sprintf(tr("%d recordings without description"), duplicateRecording->Duplicates()->Count())));
+    } else {
+      Del(duplicateRecording);
+      rd++;
+    }
+  }
+  duplicateRecordingsStateKey.Remove(rr > 0);
+  dsyslog("duplicates: Removed %d recordings and %d duplicate recordings.", rr, rd);
+}
+
+cDuplicateRecordings DuplicateRecordings;
+
+// --- cDuplicateRecordingScannerThread ------------------------------------------
+
+cDuplicateRecordingScannerThread::cDuplicateRecordingScannerThread() : cThread("duplicate recording scanner", true) {
+  title = dc.title;
+  hidden = dc.hidden;
+}
+
+cDuplicateRecordingScannerThread::~cDuplicateRecordingScannerThread(){
+  Stop();
+}
+
+void cDuplicateRecordingScannerThread::Stop(void) {
+  Cancel(3);
+}
+
+void cDuplicateRecordingScannerThread::Action(void) {
+  while (Running()) {
+    if (title != dc.title || hidden != dc.hidden) {
+      recordingsStateKey.Reset();
+      title = dc.title;
+      hidden = dc.hidden;
+    }
+    if (cRecordings::GetRecordingsRead(recordingsStateKey)) {
+      recordingsStateKey.Remove();
+      Scan();
+    }
+    if (Running())
+      cCondWait::SleepMs(500);
+  }
+}
+
+void cDuplicateRecordingScannerThread::Scan(void) {
+  dsyslog("duplicates: Scanning of duplicate recordings started.");
   struct timeval startTime, stopTime;
   gettimeofday(&startTime, NULL);
-  cMutexLock MutexLock(&mutex);
-#ifdef DEBUG_VISIBILITY
-  cVisibility::ClearCounters();
-  int isDuplicateCount = 0;
-#endif
   cDuplicateRecording *descriptionless = new cDuplicateRecording();
   cList<cDuplicateRecording> recordings;
-  Clear();
-  {
-#if VDRVERSNUM >= 20301
-    cStateKey recordingsStateKey;
-    cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
-    Recordings->Sort();
-    for (const cRecording *recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
-#else
-    cThreadLock RecordingsLock(&Recordings);
-    Recordings.Sort();
-    for (cRecording *recording = Recordings.First(); recording; recording = Recordings.Next(recording)) {
-#endif
-      if (recording) {
-        cDuplicateRecording *Item = new cDuplicateRecording(recording);
-        if (Item->HasDescription())
-          recordings.Add(Item);
-        else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
-          descriptionless->Duplicates()->Add(Item);
-      }
-    }
-#if VDRVERSNUM >= 20301
-    recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
-#endif
+  cRecordings *Recordings = cRecordings::GetRecordingsWrite(recordingsStateKey); // write access is necessary for sorting!
+  Recordings->Sort();
+  for (const cRecording *recording = Recordings->First(); recording; recording = Recordings->Next(recording)) {
+    cDuplicateRecording *Item = new cDuplicateRecording(recording);
+    if (Item->HasDescription())
+      recordings.Add(Item);
+    else if (dc.hidden || Item->Visibility().Read() != HIDDEN)
+      descriptionless->Duplicates()->Add(Item);
   }
+  recordingsStateKey.Remove(false); // sorting doesn't count as a real modification
+  cList<cDuplicateRecording> duplicates;
   for (cDuplicateRecording *recording = recordings.First(); recording; recording = recordings.Next(recording)) {
-    if (recording && !recording->Checked()) {
+    if (!Running() || RecordingsStateChanged()) {
+      delete descriptionless;
+      return;
+    }
+    if (cIoThrottle::Engaged())
+      cCondWait::SleepMs(100);
+    if (!recording->Checked()) {
       recording->SetChecked();
-      cDuplicateRecording *duplicates = new cDuplicateRecording();
-      duplicates->Duplicates()->Add(new cDuplicateRecording(*recording));
+      cDuplicateRecording *duplicate = new cDuplicateRecording();
+      duplicate->Duplicates()->Add(new cDuplicateRecording(*recording));
       for (cDuplicateRecording *compare = recordings.First(); compare; compare = recordings.Next(compare)) {
-        if (compare && !compare->Checked()) {
-#ifdef DEBUG_VISIBILITY
-          isDuplicateCount++;
-#endif
+        if (!compare->Checked()) {
           if (recording->IsDuplicate(compare)) {
-            duplicates->Duplicates()->Add(new cDuplicateRecording(*compare));
+            duplicate->Duplicates()->Add(new cDuplicateRecording(*compare));
             compare->SetChecked();
           }
         }
       }
-      if (duplicates->Duplicates()->Count() > 1) {
-        duplicates->SetText(cString::sprintf(tr("%d duplicate recordings"), duplicates->Duplicates()->Count()));
-        Add(duplicates);
+      if (duplicate->Duplicates()->Count() > 1) {
+        duplicate->SetText(std::string(cString::sprintf(tr("%d duplicate recordings"), duplicate->Duplicates()->Count())));
+        duplicates.Add(duplicate);
       } else
-        delete duplicates;
+        delete duplicate;
     }
   }
   if (descriptionless->Duplicates()->Count() > 0) {
-    descriptionless->SetText(cString::sprintf(tr("%d recordings without description"), descriptionless->Duplicates()->Count()));
-    Add(descriptionless);
+    descriptionless->SetText(std::string(cString::sprintf(tr("%d recordings without description"), descriptionless->Duplicates()->Count())));
+    duplicates.Add(descriptionless);
   } else
     delete descriptionless;
+  if (RecordingsStateChanged())
+    return;
+  cStateKey duplicateRecordingsStateKey;
+  DuplicateRecordings.Lock(duplicateRecordingsStateKey, true);
+  DuplicateRecordings.Clear();
+  for (cDuplicateRecording *duplicate = duplicates.First(); duplicate; duplicate = duplicates.Next(duplicate)) {
+    DuplicateRecordings.Add(new cDuplicateRecording(*duplicate));
+  }
+  duplicateRecordingsStateKey.Remove();
   gettimeofday(&stopTime, NULL);
   double seconds = (((long long)stopTime.tv_sec * 1000000 + stopTime.tv_usec) - ((long long)startTime.tv_sec * 1000000 + startTime.tv_usec)) / 1000000.0;
-#ifdef DEBUG_VISIBILITY
-  dsyslog("duplicates: Scanning of duplicates took %.2f seconds, is duplicate count %d, get count %d, read count %d, access count %d.",
-    seconds, isDuplicateCount, cVisibility::getCount, cVisibility::readCount, cVisibility::accessCount);
-#else
-  dsyslog("duplicates: Scanning of duplicates took %.2f seconds.", seconds);
-#endif
+  dsyslog("duplicates: Scanning of duplicate recordings took %.2f seconds.", seconds);
 }
 
-cDuplicateRecordings DuplicateRecordings;
+bool cDuplicateRecordingScannerThread::RecordingsStateChanged(void) {
+  if (cRecordings::GetRecordingsRead(recordingsStateKey)) {
+    recordingsStateKey.Reset();
+    recordingsStateKey.Remove();
+    dsyslog("duplicates: Recordings state changed while scanning.");
+    cCondWait::SleepMs(500);
+    return true;
+  }
+  return false;
+}
+
+cDuplicateRecordingScannerThread DuplicateRecordingScanner;
 

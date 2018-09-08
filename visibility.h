@@ -9,8 +9,6 @@
 #ifndef _DUPLICATES_VISIBILITY_H
 #define _DUPLICATES_VISIBILITY_H
 
-//#define DEBUG_VISIBILITY
-
 #include <vdr/recording.h>
 
 // --- eVisibility -----------------------------------------------------------
@@ -30,12 +28,6 @@ public:
   void Set(bool visible);
   eVisibility Read(void);
   bool Write(bool visible);
-#ifdef DEBUG_VISIBILITY
-  static int getCount;
-  static int readCount;
-  static int accessCount;
-  static void ClearCounters(void);
-#endif
 };
 
 #endif

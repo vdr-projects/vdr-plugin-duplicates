@@ -35,18 +35,38 @@ public:
   bool Checked() { return checked; }
   cVisibility Visibility() { return visibility; }
   std::string FileName(void) { return fileName; }
-  void SetText(const char *t) { text = std::string(t); }
-  const char *Text(void) { return text.c_str(); }
+  void SetText(std::string t) { text = t; }
+  std::string Text(void) { return text; }
   cList<cDuplicateRecording> *Duplicates(void) { return duplicates; }
 };
+
+// --- cDuplicateRecordings ------------------------------------------------------
 
 class cDuplicateRecordings : public cList<cDuplicateRecording> {
 public:
   cDuplicateRecordings(void);
-  cMutex mutex;
-  void Update(void);
+  void Remove(std::string fileName);
 };
 
 extern cDuplicateRecordings DuplicateRecordings;
+
+// --- cDuplicateRecordingScannerThread ------------------------------------------
+
+class cDuplicateRecordingScannerThread : public cThread {
+private:
+  cStateKey recordingsStateKey;
+  int title;
+  int hidden;
+  void Scan(void);
+  bool RecordingsStateChanged(void);
+protected:
+  virtual void Action(void);
+public:
+  cDuplicateRecordingScannerThread();
+  ~cDuplicateRecordingScannerThread();
+  void Stop(void);
+};
+
+extern cDuplicateRecordingScannerThread DuplicateRecordingScanner;
 
 #endif

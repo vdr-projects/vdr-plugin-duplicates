@@ -1,6 +1,10 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2018-09-07: Version 1.0.0
+- Dropped support for VDR 2.2.0.
+- Added scanner thread for duplicates.
+
 2018-09-06: Version 0.2.2
 
 - Updated kNone handling in main menu.
