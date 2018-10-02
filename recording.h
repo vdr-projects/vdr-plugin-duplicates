@@ -29,7 +29,7 @@ public:
   cDuplicateRecording(const cRecording *Recording);
   cDuplicateRecording(const cDuplicateRecording &DuplicateRecording);
   ~cDuplicateRecording();
-  bool HasDescription(void) const { return ! description.empty(); }
+  bool HasDescription(void) const;
   bool IsDuplicate(cDuplicateRecording *DuplicateRecording);
   void SetChecked(bool chkd = true) { checked = chkd; }
   bool Checked() { return checked; }

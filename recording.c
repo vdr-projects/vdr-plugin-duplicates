@@ -66,6 +66,14 @@ cDuplicateRecording::~cDuplicateRecording() {
   delete duplicates;
 }
 
+bool cDuplicateRecording::HasDescription(void) const {
+  if (!description.empty())
+    return true;
+  else if (duplicates && duplicates->First())
+    return duplicates->First()->HasDescription();
+  return false;
+}
+
 bool cDuplicateRecording::IsDuplicate(cDuplicateRecording *DuplicateRecording) {
   if (!HasDescription() || !DuplicateRecording->HasDescription())
     return false;

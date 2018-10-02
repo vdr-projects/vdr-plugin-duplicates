@@ -1,6 +1,9 @@
 VDR Plugin 'duplicates' Revision History
 ----------------------------------------
 
+2018-10-02: Version 1.0.1
+- Fixed header row when after deleting or hiding recordings.
+
 2018-09-07: Version 1.0.0
 - Dropped support for VDR 2.2.0.
 - Added scanner thread for duplicates.
