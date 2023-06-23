@@ -2,9 +2,9 @@ This is a "plugin" for the Video Disk Recorder (VDR).
 
 Written by:                  Timo Eskola <timo@tolleri.net>
 
-Project's homepage:          http://projects.vdr-developer.org/projects/plg-duplicates
+Project's homepage:          https://github.com/vdr-projects/vdr-plugin-duplicates
 
-Latest version available at: http://projects.vdr-developer.org/projects/plg-duplicates
+Latest version available at: https://github.com/vdr-projects/vdr-plugin-duplicates/tags
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,14 +18,14 @@ Shows duplicate recordings.
 
 Detection method:
 
-The detection method is based on recording information. 
+The detection method is based on recording information.
 
-Recordings without a description or a short description are not 
-included in the comparison and are shown at the botton of the 
+Recordings without a description or a short description are not
+included in the comparison and are shown at the botton of the
 duplicate recordings list.
 
-Recordings are not considered duplicate if title comparison is 
-active and shorter title in not included in the other title. 
+Recordings are not considered duplicate if title comparison is
+active and shorter title in not included in the other title.
 
 The short description and the description are concatenated to a
 string. Spaces and '|' characters are removed from the string.
